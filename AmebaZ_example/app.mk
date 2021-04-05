@@ -37,13 +37,13 @@ LFLAGS += -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -g $(OPT) -
 LFLAGS += -Wl,-Map=$(BIN_DIR)/$(TARGET).map
 LFLAGS += -Wl,--gc-sections -Wl,--cref -Wl,--entry=Reset_Handler -Wl,--no-enum-size-warning -Wl,--no-wchar-size-warning
 LFLAGS += -Wl,-wrap,malloc -Wl,-wrap,free -Wl,-wrap,realloc
-#LFLAGS += -Wl,-wrap,rom_psk_CalcGTK
-#LFLAGS += -Wl,-wrap,rom_psk_CalcPTK
-#LFLAGS += -Wl,-wrap,CalcMIC
-#LFLAGS += -Wl,-wrap,CheckMIC
-#LFLAGS += -Wl,-wrap,aes_80211_encrypt
-#FLAGS += -Wl,-wrap,aes_80211_decrypt
-#LFLAGS += -Wl,-wrap,DecGTK
+LFLAGS += -Wl,-wrap,rom_psk_CalcGTK
+LFLAGS += -Wl,-wrap,rom_psk_CalcPTK
+LFLAGS += -Wl,-wrap,CalcMIC
+LFLAGS += -Wl,-wrap,CheckMIC
+LFLAGS += -Wl,-wrap,aes_80211_encrypt
+LFLAGS += -Wl,-wrap,aes_80211_decrypt
+LFLAGS += -Wl,-wrap,DecGTK
 
 LIBFLAGS = -L$(AMEBA1_SDK_PATH)soc/realtek/8711b/misc/bsp/lib/common/GCC
 # -l_platform -l_wlan -l_wlan_mp -l_wps -l_p2p -l_dct -l_rtlstd -lm -lc -lnosys -lgcc -l_websocket -l_http -l_mdns

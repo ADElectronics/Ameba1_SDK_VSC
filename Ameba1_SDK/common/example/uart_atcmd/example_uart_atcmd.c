@@ -297,14 +297,14 @@ void uart_atcmd_reinit(UART_LOG_CONF* uartconf){
 
 	// set flow control, only support RTS and CTS concurrent mode
 	// rxflow and tx flow is fixed by hardware
-	//#define rxflow	UART_RTS
-	//#define txflow	UART_CTS
+	#define rxflow	UART_RTS
+	#define txflow	UART_CTS
 	if(uartconf->FlowControl){
 		pin_mode(UART_CTS, PullDown); //init CTS in low
-		serial_set_flow_control(&at_cmd_sobj, FlowControlRTSCTS/*, rxflow, txflow*/);
+		serial_set_flow_control(&at_cmd_sobj, FlowControlRTSCTS, rxflow, txflow);
 	}
 	else
-		serial_set_flow_control(&at_cmd_sobj, FlowControlNone/*, rxflow, txflow*/);
+		serial_set_flow_control(&at_cmd_sobj, FlowControlNone, rxflow, txflow);
 }
 
 void uart_at_send_string(char *str)
@@ -528,14 +528,14 @@ void uart_atcmd_main(void)
 	serial_rx_fifo_level(&at_cmd_sobj, FifoLvHalf);
 	// set flow control, only support RTS and CTS concurrent mode
 	// rxflow and tx flow is fixed by hardware
-	//#define rxflow	UART_RTS
-	//#define txflow	UART_CTS
+	#define rxflow	UART_RTS
+	#define txflow	UART_CTS
 	if(uartconf.FlowControl){
 		pin_mode(UART_CTS, PullDown); //init CTS in low
-		serial_set_flow_control(&at_cmd_sobj, FlowControlRTSCTS/*, rxflow, txflow*/);
+		serial_set_flow_control(&at_cmd_sobj, FlowControlRTSCTS, rxflow, txflow);
 	}
 	else
-		serial_set_flow_control(&at_cmd_sobj, FlowControlNone/*, rxflow, txflow*/);
+		serial_set_flow_control(&at_cmd_sobj, FlowControlNone, rxflow, txflow);
 
 	/*uart_at_lock_init();*/
 

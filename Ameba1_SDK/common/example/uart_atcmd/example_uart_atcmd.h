@@ -12,17 +12,19 @@
 #include "semphr.h"
 
 /*UART Pinmux*/
-#define CONFIG_AMEBA1 1
-#if CONFIG_AMEBA1
+//#define CONFIG_AMEBA1 1
+#if CONFIG_PLATFORM_8195A//CONFIG_AMEBA1
 #define UART_TX			PA_4
 #define UART_RX			PA_0
-#define UART_RTS			PA_2
-#define UART_CTS			PA_1
-#else
+#define UART_RTS		PA_2
+#define UART_CTS		PA_1
+#elif CONFIG_PLATFORM_8711B
 #define UART_TX			PA_23
 #define UART_RX			PA_18
-#define UART_RTS			PA_22
-#define UART_CTS			PA_19
+#define UART_RTS		PA_22
+#define UART_CTS		PA_19
+#else
+#error "Unsupported platform!"
 #endif
 
 #define ATCMD_RX_GPIO_WAKEUP 0
