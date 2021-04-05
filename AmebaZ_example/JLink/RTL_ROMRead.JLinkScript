@@ -1,0 +1,6 @@
+r
+
+savebin build/read_bios_rom.bin 0x00000000 0x080000
+
+g
+q

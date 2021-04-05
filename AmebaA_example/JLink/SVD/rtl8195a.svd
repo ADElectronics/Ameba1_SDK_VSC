@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<device schemaVersion="1.1"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+	xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
+	<name>RTL8195AM</name>
+	<version>1.1</version>
+	<description>RTL8195AM</description>
+	<cpu>
+		<name>CM3</name>
+		<revision>r2p0</revision>
+		<endian>little</endian>
+		<mpuPresent>true</mpuPresent>
+		<fpuPresent>false</fpuPresent>
+		<nvicPrioBits>4</nvicPrioBits>
+		<vendorSystickConfig>true</vendorSystickConfig>
+	</cpu>
+	<addressUnitBits>8</addressUnitBits>
+	<width>32</width>
+	<size>0x20</size>
+	<resetValue>0x00000000</resetValue>
+	<resetMask>0xFFFFFFFF</resetMask>
+
+	<peripherals>
+		<!--		GPIO Control		-->
+		<peripheral>
+			<name>GPIO</name>
+			<description>General-purpose I/Os</description>
+			<groupName>GPIO</groupName>
+			<baseAddress>0x40001000</baseAddress>
+			<addressBlock>
+				<offset>0x0</offset>
+				<size>0x1800</size>
+				<usage>registers</usage>
+			</addressBlock>
+			<registers>
+				<register>
+					<name>PORTA_DR</name>
+					<description>data register</description>
+					<addressOffset>0x00</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTA_DDR</name>
+					<description>data direction</description>
+					<addressOffset>0x04</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTA_CTRL</name>
+					<description>data source control</description>
+					<addressOffset>0x08</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTB_DR</name>
+					<description>data register</description>
+					<addressOffset>0x0c</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTB_DDR</name>
+					<description>data direction</description>
+					<addressOffset>0x10</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTB_CTRL</name>
+					<description>data source control</description>
+					<addressOffset>0x14</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTC_DR</name>
+					<description>data register</description>
+					<addressOffset>0x18</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTC_DDR</name>
+					<description>data direction</description>
+					<addressOffset>0x1c</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>PORTC_CTRL</name>
+					<description>data source control</description>
+					<addressOffset>0x20</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+
+				<!--1 Only the PORTA can be configured to generate interrupts -->
+				<register>
+					<name>GPIO_INT_EN</name>
+					<description>Interrupt enable register</description>
+					<addressOffset>0x30</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_MASK</name>
+					<description>Interrupt mask</description>
+					<addressOffset>0x34</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_TYPE</name>
+					<description>Interrupt type(level/edge) register</description>
+					<addressOffset>0x38</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_POLARITY</name>
+					<description>Interrupt polarity(Active low/high) register</description>
+					<addressOffset>0x3C</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_STATUS</name>
+					<description>Interrupt status</description>
+					<addressOffset>0x40</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_RAWSTATUS</name>
+					<description>Interrupt status without mask</description>
+					<addressOffset>0x44</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_DEBOUNCE</name>
+					<description>Interrupt signal debounce</description>
+					<addressOffset>0x48</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_PORTA_EOI</name>
+					<description>Clear interrupt</description>
+					<addressOffset>0x4c</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_EXT_PORTA</name>
+					<description>GPIO IN read or OUT read back</description>
+					<addressOffset>0x50</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_EXT_PORTB</name>
+					<description>GPIO IN read or OUT read back</description>
+					<addressOffset>0x54</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_EXT_PORTC</name>
+					<description>GPIO IN read or OUT read back</description>
+					<addressOffset>0x58</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+				<register>
+					<name>GPIO_INT_SYNC</name>
+					<description>Is level-sensitive interrupt being sync sith PCLK</description>
+					<addressOffset>0x60</addressOffset>
+					<size>32</size>
+					<access>read-write</access>
+				</register>
+			</registers>
+		</peripheral>
+	</peripherals>
+</device>

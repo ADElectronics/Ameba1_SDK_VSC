@@ -1,0 +1,128 @@
+source JLink/rtl_gdb_common.txt
+source JLink/rtl_gdb_writefile.txt
+
+#===============================================================================
+# Definition flash_write function
+#===============================================================================
+
+define flash_write
+	set $ImageType = $arg0
+	set $FileSize = $arg1
+	set $Loopnumber = ($FileSize / $FLASHDATBUFSIZE)
+	set $TailSize = ($FileSize % $FLASHDATBUFSIZE)
+
+	printf "\nImageType: %x \n", $ImageType
+	printf "FileSize: %d \n", $FileSize
+	printf "Loopnumber = %d\n", $Loopnumber
+	printf "TailSize = %d\n", $TailSize
+
+	set $FILESTARTADDR = 0
+	set $FLASHDATSRC = FlashDatSrc
+	if( $FileSize <  $FLASHDATBUFSIZE )
+		set FlashBlockWriteSize = $FileSize
+	else
+		set FlashBlockWriteSize = $FLASHDATBUFSIZE
+	end
+
+	printf "FlashDatSrc: 0x%x\n", $FLASHDATSRC
+	printf "FlashBlockWriteSize: %d\n", FlashBlockWriteSize
+	printf "FlashAddrForWrite: 0x%x\n", FlashAddrForWrite
+
+	printf "Flash write start...\n\n"
+	set $Loop = 0
+	while ($Loop < $Loopnumber)
+		set $FILESTARTADDR = $FLASHDATBUFSIZE * $Loop
+		printf "FILESTARTADDR"
+		p /x $FILESTARTADDR
+		p /x FlashAddrForWrite
+		p /x $Loop
+
+		if ($ImageType == $IMAGE_XIP1)
+			restore build/bin/image2_all_ota1.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $FLASHDATBUFSIZE)
+		end
+		if ($ImageType == $IMAGE_XIP2)
+			restore build/bin/image2_all_ota2.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $FLASHDATBUFSIZE)
+		end
+		if ($ImageType == $IMAGE_BOOT)
+			restore build/bin/boot_all.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $FLASHDATBUFSIZE)
+		end
+		if ($ImageType == $IMAGE_SYSD)
+			restore build/bin/system.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $FLASHDATBUFSIZE)
+		end
+			c
+			set $Loop = $Loop + 0x01
+	end
+
+	if ( $TailSize > 0)
+		set $FILESTARTADDR = $FLASHDATBUFSIZE * $Loop
+
+		printf "FILESTARTADDR"
+		p /x $FILESTARTADDR
+		p /x FlashAddrForWrite
+		p /x $Loop
+
+		if ($ImageType == $IMAGE_XIP1)
+			restore build/bin/image2_all_ota1.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $TailSize)
+		end
+		if ($ImageType == $IMAGE_XIP2)
+			restore build/bin/image2_all_ota2.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $TailSize)
+		end
+		if ($ImageType == $IMAGE_BOOT)
+			restore build/bin/boot_all.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $TailSize)
+		end
+		if ($ImageType == $IMAGE_SYSD)
+			restore build/bin/system.bin binary ($FLASHDATSRC-$FILESTARTADDR) $FILESTARTADDR ($FILESTARTADDR + $TailSize)
+		end
+		c
+	end
+end
+
+#===============================================================================
+# Start
+#===============================================================================
+
+printf "\nGDB Flash Writer start...\n"
+printf "Image Type: %d\n",$ImageType
+printf "Start Addr: %d\n",$StartAddr
+printf "File Size: %d\n",$FileSize
+printf "Load flash loader...\n"
+file JLink/target_FPGA.axf
+restore JLink/rtl8710b_flasher.bin binary 0x10002000
+
+#===============================================================================
+# Set rom boot BIT to flash loader
+#===============================================================================
+
+set $Temp = 0x0
+set $Temp = {int}($PERI_ON_BASE+$REG_SOC_PERI_FUNC0_EN)
+#p /x $Temp
+
+set $Temp = ($Temp | (0x01 << 26))
+set $Temp = ($Temp & ~(0x01 << 27))
+set $Temp = ($Temp & ~(0x01 << 28))
+#p /x $Temp
+
+set {int}($PERI_ON_BASE+$REG_SOC_PERI_FUNC0_EN) = $Temp
+printf "Wakeup bit: REG 0x%x = 0x%x\n", ($PERI_ON_BASE+$REG_SOC_PERI_FUNC0_EN), {int}($PERI_ON_BASE+$REG_SOC_PERI_FUNC0_EN)
+
+#=============================================================================== 
+# Flash write
+#=============================================================================== 
+
+b rtl_flash_download.c:88
+c
+
+set FlashAddrForWrite = $StartAddr
+flash_write $ImageType $FileSize
+
+#===============================================================================
+# Complete
+#===============================================================================
+
+printf "Exit flashloader ...\n"
+set FlashWriteComplete = 0x1
+c
+
+#clear rtl_flash_download.c:88
+#delete rtl_flash_download.c:88
+#quit

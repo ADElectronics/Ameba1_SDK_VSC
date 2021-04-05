@@ -1,0 +1,13 @@
+r
+
+//loadbin build/bin/boot_all.bin 0x10002000
+//loadbin build/bin/ram_2.p.bin 0x10005000
+//loadbin build/bin/xip_image2.ram.bin 0x10005000
+loadbin build/bin/ram_2.p.bin 0x10002000
+
+wreg "R15 (PC)" 0x10002020
+wreg "R13 (SP)" 0x1003EFFC
+wreg "FAULTMASK" 0x00000000
+
+g
+q

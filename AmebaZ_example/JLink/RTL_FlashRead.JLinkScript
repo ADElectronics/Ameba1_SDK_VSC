@@ -1,0 +1,6 @@
+r
+
+savebin build/read_all.bin 0x08000000 0x00100000
+
+g
+q

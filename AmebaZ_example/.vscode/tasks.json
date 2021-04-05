@@ -1,0 +1,135 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+/* ====================================== Build Commands ====================================== */
+			"label": "Make Build",
+			"type": "shell",
+			"command": "make -s -j 6 all",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": ["$gcc"]
+		},
+		{
+			"label": "Make Clean",
+			"type": "shell",
+			"command": "make -s clean",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": ["$gcc"]
+		},
+/* ====================================== Check AXF Commands ====================================== */
+		{
+			"label": "Check Flash Size",
+			"type": "shell",
+			// https://sourceware.org/binutils/docs/binutils/nm.html
+			"command": "arm-none-eabi-nm.exe --print-size --size-sort --radix=d build/bin/build.axf",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": ["$gcc"]
+		},
+		{
+			"label": "Check ELF Sections",
+			"type": "shell",
+			// https://sourceware.org/binutils/docs/binutils/readelf.html
+			"command": "arm-none-eabi-readelf.exe --sections build/bin/build.axf",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": ["$gcc"]
+		},
+/* ====================================== JLink Commands ====================================== */
+		{
+			"label": "JLink - Start GDB Server (M4)",
+			"type": "shell",
+			"command": "make -s start_gdb_server_m4",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "JLink - Flash Boot (Image 1)",
+			"type": "shell",
+			"command": "make -s flash_boot",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "JLink - Flash OTA 1 (Image 2)",
+			"type": "shell",
+			"command": "make -s flash_write_ota1",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "JLink - Flash OTA 2 (Image 2)",
+			"type": "shell",
+			"command": "make -s flash_write_ota2",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "JLink - Read Full Flash",
+			"type": "shell",
+			"command": "make -s flash_read",
+			"options": {
+				"cwd": "${workspaceRoot}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": ["/C"]
+				}
+			},
+			"problemMatcher": []
+		},
+	]
+}

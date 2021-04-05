@@ -1,0 +1,20 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug in RAM",
+			"cwd": "${workspaceRoot}",
+			"executable": "build/bin/build.axf",
+			"serverArgs": ["-speed", "12000"],
+			"debuggerArgs": ["-x", "JLink/rtl_gdb_ramdebug_jlink.txt"],
+			//"svdFile": "JLink/SVD/rtl8195a.svd", //RTL8195AM
+
+			"request": "attach", // attach or launch
+			"type": "cortex-debug",
+			"servertype": "jlink",
+			"device": "Cortex-M4",
+			//"interface": "swd",
+			//"runToMain": true
+		}
+	]
+}
