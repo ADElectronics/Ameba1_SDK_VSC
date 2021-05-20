@@ -11,6 +11,10 @@ INCLUDES += sdk/common/application
 INCLUDES += sdk/common/application/mqtt/MQTTClient
 INCLUDES += sdk/common/application/mqtt/MQTTPacket
 
+ifeq ($(APP_WEBSERVER), 1)
+INCLUDES += sdk/common/network/webserver
+endif
+
 # ---------------------------------------------------- Source file list ----------------------------------------------------
 
 #network - app
@@ -35,6 +39,18 @@ SRC_C += sdk/common/utilities/ssl_client_ext.c
 SRC_C += sdk/common/utilities/tcptest.c
 SRC_C += sdk/common/application/uart_adapter/uart_adapter.c
 SRC_C += sdk/common/api/network/src/wlan_network.c
+
+#network - webserver by pvvx
+ifeq ($(APP_WEBSERVER), 1)
+SRC_C += sdk/common/network/webserver/src/flash_utils.c
+SRC_C += sdk/common/network/webserver/src/tcpsrv.c
+SRC_C += sdk/common/network/webserver/src/web_auth.c
+SRC_C += sdk/common/network/webserver/src/web_srv.c
+SRC_C += sdk/common/network/webserver/src/web_utils.c
+SRC_C += sdk/common/network/webserver/src/web_websocket.c
+SRC_C += sdk/common/network/webserver/src/webfs.c
+SRC_C += sdk/common/network/webserver/src/websock.c
+endif
 
 #network - httpc
 ifeq ($(APP_HTTPC), 1)

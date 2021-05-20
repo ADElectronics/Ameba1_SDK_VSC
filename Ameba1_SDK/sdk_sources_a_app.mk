@@ -29,6 +29,10 @@ INCLUDES += sdk/common/audio
 INCLUDES += sdk/common/application/xmodem
 INCLUDES += sdk/common/application/mqtt/MQTTClient
 
+ifeq ($(APP_WEBSERVER), 1)
+INCLUDES += sdk/common/network/webserver
+endif
+
 # ---------------------------------------------------- Source file list ----------------------------------------------------
 
 #console
@@ -62,6 +66,18 @@ SRC_C += sdk/common/utilities/tcptest.c
 SRC_C += sdk/common/application/uart_adapter/uart_adapter.c
 SRC_C += sdk/common/api/network/src/wlan_network.c
 SRC_C += sdk/soc/realtek/8195a/misc/platform/ota_8195a.c
+
+#network - webserver by pvvx
+ifeq ($(APP_WEBSERVER), 1)
+SRC_C += sdk/common/network/webserver/src/flash_utils.c
+SRC_C += sdk/common/network/webserver/src/tcpsrv.c
+SRC_C += sdk/common/network/webserver/src/web_auth.c
+SRC_C += sdk/common/network/webserver/src/web_srv.c
+SRC_C += sdk/common/network/webserver/src/web_utils.c
+SRC_C += sdk/common/network/webserver/src/web_websocket.c
+SRC_C += sdk/common/network/webserver/src/webfs.c
+SRC_C += sdk/common/network/webserver/src/websock.c
+endif
 
 #network - httpc
 ifeq ($(APP_HTTPC), 1)

@@ -12,7 +12,7 @@ void* __wrap_malloc( size_t size )
 
 void* __wrap_realloc( void *p, size_t size )
 {
-    return pvPortReAalloc(p, size);
+    return pvPortReAlloc(p, size);//return pvPortReAalloc(p, size);
 }
 
 void __wrap_free( void *p )

@@ -10,6 +10,8 @@ APP_HTTPC = 0
 APP_HTTPD = 0
 APP_MDNS = 0
 APP_WSCLIENT = 0
+# Адаптированный WEB сервер от pvvx
+APP_WEBSERVER = 1
 
 # Компилировать оригинальные примеры из SDK ?
 APP_SDK_EXAMPLES = 1

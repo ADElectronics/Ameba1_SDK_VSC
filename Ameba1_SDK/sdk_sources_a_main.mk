@@ -126,6 +126,7 @@ SRC_C += sdk/soc/realtek/8195a/fwlib/rtl8195a/src/rtl8195a_sdio_host_open.c
 endif
 
 #os - freertos
+SRC_C += sdk/soc/realtek/8195a/misc/platform/gcc_wrap.c
 #SRC_C += sdk/os/freertos/freertos_v$(FREERTOS_VERSION)/Source/portable/Common/mpu_wrappers.c
 SRC_C += sdk/os/freertos/freertos_v$(FREERTOS_VERSION)/Source/portable/MemMang/heap_5.c
 SRC_C += sdk/os/freertos/freertos_v$(FREERTOS_VERSION)/Source/portable/GCC/ARM_CM3/port.c

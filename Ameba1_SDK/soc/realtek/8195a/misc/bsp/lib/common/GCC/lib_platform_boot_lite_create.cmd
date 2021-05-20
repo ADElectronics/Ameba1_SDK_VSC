@@ -19,6 +19,7 @@ del hal_log_uart.o
 del hal_pinmux.o
 del hal_misc.o
 rem del startup.o
+del gcc_wrap.o
 rem del hal_spi_flash_ram.o
 
 arm-none-eabi-ar.exe ru ..\%libname%_boot_lite.a *.o
