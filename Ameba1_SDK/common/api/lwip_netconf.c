@@ -122,7 +122,7 @@ void LwIP_Init(void)
 
 	/* Create tcp_ip stack thread */
 	tcpip_init( NULL, NULL );
-
+	printf("\n");
 
 	/* - netif_add(struct netif *netif, struct ip_addr *ipaddr,
 	struct ip_addr *netmask, struct ip_addr *gw,

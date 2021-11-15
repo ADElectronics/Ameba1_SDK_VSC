@@ -16,3 +16,7 @@ PICK = $(AMEBA_TOOLDIR)pick.exe
 PAD = $(AMEBA_TOOLDIR)padding.exe
 CHKSUM = $(AMEBA_TOOLDIR)checksum.exe
 OTA = $(AMEBA_TOOLDIR)ota.exe
+
+# ------------------------------------------------------ WEB File System tools ---------------------------------------------------
+
+WEBFS = $(AMEBA_TOOLDIR)webfs.exe

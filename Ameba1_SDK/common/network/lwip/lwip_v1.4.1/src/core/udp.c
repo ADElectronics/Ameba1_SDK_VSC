@@ -85,9 +85,9 @@ struct udp_pcb *udp_pcbs;
 void
 udp_init(void)
 {
-#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND)
+#ifdef LWIP_RAND
   udp_port = UDP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
-#endif /* LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND) */
+#endif /* LWIP_RAND */
 }
 
 /**
@@ -134,6 +134,24 @@ again:
   return udp_port;
 #endif
 }
+
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+/**
+ * Randomize a new local UDP port once.
+ */
+void 
+udp_randomize_local_port(void)
+{
+  static int done = 0;
+
+  if (!done) {
+    done = 1;
+    LWIP_SRAND();
+    udp_port = LWIP_RAND() % (UDP_LOCAL_PORT_RANGE_END - UDP_LOCAL_PORT_RANGE_START) + UDP_LOCAL_PORT_RANGE_START;
+  }
+}
+#endif  /* LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS */
 
 /**
  * Process an incoming UDP datagram.

@@ -30,6 +30,19 @@ SECTIONS
 		__rom_image_end__ = .;
 	} > ROM
 
+   /* math.h ... */
+   .ARM.extab :
+   {
+      *(.ARM.extab* .gnu.linkonce.armextab.*)
+   } > ROM
+
+   .ARM :
+   {
+      __exidx_start = .;
+      *(.ARM.exidx*)
+      __exidx_end = .;
+   } > ROM
+
 	/* 0x10000000: SRAM */
 	.rom_ram : /* use in rom */
 	{
@@ -254,6 +267,16 @@ SECTIONS
 	{
 		KEEP(*(.loader.head*))
 	}
+
+   /* Remove information from the standard libraries */
+   /DISCARD/ :
+   {
+      libc.a ( * )
+      libm.a ( * )
+      libgcc.a ( * )
+   }
+
+   .ARM.attributes 0 : { *(.ARM.attributes) }
 
 	ASSERT(__ram_image_end__ == 0x100020c0, "Error rom-bios-boot code & data!")
 }

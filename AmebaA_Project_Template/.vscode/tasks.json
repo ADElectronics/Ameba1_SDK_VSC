@@ -1,0 +1,121 @@
+{
+   "version": "2.0.0",
+   "tasks": [
+      {
+/* ====================================== Build Commands ====================================== */
+         "label": "Make Build",
+         "type": "shell",
+         "command": "make -s -j 6 all",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "group": {
+            "kind": "build",
+            "isDefault": true
+         }
+      },
+      {
+         "label": "Make Clean",
+         "type": "shell",
+         "command": "make -s clean",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "group": {
+            "kind": "build",
+            "isDefault": true
+         },
+         "problemMatcher": []
+      },
+/* ====================================== Check AXF Commands ====================================== */
+      {
+         "label": "Check Flash Size",
+         "type": "shell",
+         // https://sourceware.org/binutils/docs/binutils/nm.html
+         "command": "arm-none-eabi-nm.exe --print-size --size-sort --radix=d build/bin/build.axf",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+      {
+         "label": "Check ELF Sections",
+         "type": "shell",
+         // https://sourceware.org/binutils/docs/binutils/readelf.html
+         "command": "arm-none-eabi-readelf.exe --sections build/bin/build.axf",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+/* ====================================== JLink Commands ====================================== */
+      {
+         "label": "JLink - Start GDB Server (M3)",
+         "type": "shell",
+         "command": "make -s start_gdb_server_m3",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+      {
+         "label": "JLink - Flash All",
+         "type": "shell",
+         "command": "make -s flash_all",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+      {
+         "label": "JLink - Run in RAM",
+         "type": "shell",
+         "command": "make -s run_in_ram",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+      {
+         "label": "JLink - Make and flash WebFS",
+         "type": "shell",
+         "command": "make -s webfs_make_flash",
+         "options": {
+            "cwd": "${workspaceRoot}",
+            "shell": {
+               "executable": "cmd.exe",
+               "args": ["/C"]
+            }
+         },
+         "problemMatcher": []
+      },
+   ]
+   }

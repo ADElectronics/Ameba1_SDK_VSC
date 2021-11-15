@@ -129,9 +129,9 @@ static u16_t tcp_new_port(void);
 void
 tcp_init(void)
 {
-#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND)
+#ifdef LWIP_RAND
   tcp_port = TCP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
-#endif /* LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS && defined(LWIP_RAND) */
+#endif /* LWIP_RAND */
 }
 
 /**
@@ -667,6 +667,24 @@ again:
   }
   return tcp_port;
 }
+
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+/**
+ * Randomize a new local TCP port once.
+ */
+void 
+tcp_randomize_local_port(void)
+{
+  static int done = 0;
+
+  if (!done) {
+    done = 1;
+    LWIP_SRAND();
+    tcp_port = LWIP_RAND() % (TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START) + TCP_LOCAL_PORT_RANGE_START;
+  }
+}
+#endif  /* LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS */
 
 /**
  * Connects to another host. The function given as the "connected"

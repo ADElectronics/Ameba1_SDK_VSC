@@ -1164,7 +1164,7 @@ int wifi_on(rtw_mode_t mode)
 
 	// set wifi mib
 	wifi_set_mib();
-	printf("\n\rInitializing WIFI ...");
+	printf("\n\rInitializing WIFI ...\n");
 	for(idx=0;idx<devnum;idx++){
 		ret = rltk_wlan_init(idx, mode);
 		if(ret <0)

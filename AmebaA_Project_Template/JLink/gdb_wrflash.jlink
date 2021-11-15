@@ -1,0 +1,79 @@
+##################################################################################################
+# FlasherWrite #
+##################################################################################################
+define FlasherWrite
+set $sector = 0
+set $offset = 0
+set $size = $arg2
+while $offset < $size
+   set $len = $size - $offset
+   if $len > $rtl8710_flasher_buffer_size
+      set $len = $rtl8710_flasher_buffer_size
+   end
+   set $flash_offset = $arg1 + $offset
+   printf "write offset 0x%08x\n", $flash_offset
+   set $parms1 = $rtl8710_flasher_buffer + 0x20 - $flash_offset
+   set $parms2 = $flash_offset
+   set $parms3 = $flash_offset + $len
+   restore $arg0 binary $parms1 $parms2 $parms3
+   if $rtl8710_flasher_auto_erase != 0
+      set $count_i = $flash_offset
+      while $count_i < ($flash_offset + $len)
+         set $sector = $count_i/$rtl8710_flasher_sector_size
+         if $rtl8710_flasher_auto_erase_sector != $sector
+            set $parms1 = $sector * $rtl8710_flasher_sector_size
+            printf "erase sector %d at 0x%08x\n", $sector, $parms1 
+            FlashSecErase $parms1
+            set $rtl8710_flasher_auto_erase_sector = $sector
+         end
+      set $count_i = $count_i + 1
+      end
+   end
+   FlasherWrBlock $flash_offset $len
+   printf "wrote %d bytes at 0x%08x\n", $len, $flash_offset
+   if $rtl8710_flasher_auto_verify != 0
+      printf "verify offset 0x%08x len %d\n", $flash_offset, $len
+      FlasherVrBlock $flash_offset $len
+   end
+   set $offset = $offset + $rtl8710_flasher_buffer_size
+end
+end
+
+##################################################################################################
+# Main #
+##################################################################################################
+source -v JLink/gdb_common.jlink
+source -v JLink/flash_file_info.jlink
+
+InitJlink
+SystemInit
+SetClk83MHz
+SPI_Init
+#FlashImagesInfo
+call1
+
+if $FirmwareSize == 0
+ error "FirmwareSize = 0!"
+end
+
+FlasherInit
+FlasherLoad JLink/rtl8710_flasher.bin
+
+if $Image1Size != 0
+   printf "Write Image1 size %d to Flash addr 0x00000000:\n", $Image1Size
+   call2
+   if $Image2Size != 0 && $Image2Addr >= $Image1Size
+      if $Image3Size != 0 && $Image3Addr > $Image2Size
+         set $Image2Size = $Image2Size + $Image3Size
+         printf "Write Image2+3 size %d to Flash addr 0x%08x:\n", $Image2Size, $Image2Addr
+      else
+         printf "Write Image2 size %d to Flash addr 0x%08x:\n", $Image2Size, $Image2Addr
+      end
+      call3
+   end
+end
+
+monitor reset
+SetBootFlash
+monitor go
+quit

@@ -59,7 +59,7 @@ bool WebSocketAcceptKey(uint8_t* dkey, uint8_t* skey)
          // TODO: переделать на стандартное API...
 			//if(g_rtl_cipherEngine.isInit != 1)
          //{
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 			//	info_printf("(crypto on!) ");
 #endif
 			//	rtl_cryptoEngine_init();
@@ -68,7 +68,7 @@ bool WebSocketAcceptKey(uint8_t* dkey, uint8_t* skey)
 //			rtl_cryptoEngine_info();
 			device_mutex_unlock(RT_DEV_LOCK_CRYPTO);
 			len = base64encode(dkey, FileNameSize, keybuf, CRYPTO_SHA1_DIGEST_LENGTH);
-#if DEBUGSOO > 2
+#if WEBSERVER_DEBUG_EN > 2
 			os_printf("\ncha:'");
 			print_hex_dump(keybuf, CRYPTO_SHA1_DIGEST_LENGTH, '\0');
 			os_printf("'\n");
@@ -87,7 +87,7 @@ bool WebSocketAcceptKey(uint8_t* dkey, uint8_t* skey)
 void WebsocketMask(WS_FRSTAT *ws, uint8_t *raw_data, uint32_t raw_len)
 {
 	uint32_t i, x = ws->cur_len;
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 	os_printf("mask[%u]%u ", raw_len, x);
 #endif
     for (i = 0; i < raw_len; i++)
@@ -116,8 +116,7 @@ uint32_t WebsocketHead(WS_FRSTAT *ws, uint8_t *raw_data, uint32_t raw_len)
    {
 		if(data_len == 127)
       {
-			uint32_t i;
-			for(i = 3; i < 6; i++)
+			for(uint32_t i = 3; i < 6; i++)
          {
 				if(raw_data[i] != 0)
             {
@@ -186,7 +185,7 @@ uint32_t WebsocketHead(WS_FRSTAT *ws, uint8_t *raw_data, uint32_t raw_len)
 	if((raw_data[0] & WS_FRAGMENT_FIN) != 0) { // конец - данные на обработку
 		ws->flg |= WS_FLG_FIN;
 	}
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 	os_printf("ws#%02xrx[%u] ", raw_data[0], data_len);
 #endif
 	return 1;
@@ -246,7 +245,7 @@ err_t WebsocketTxFrame(TCP_SERV_CONN *ts_conn, uint32_t opcode, uint8_t *raw_dat
 	err_t err = 1; // ERR_BUF;
 	if(len >= raw_len + head_len)
    {
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 		os_printf("ws#%02xtx[%u] ", head.uc[0], raw_len);
 #endif
 		ts_conn->flag.nagle_disabled = 0;
@@ -266,7 +265,7 @@ err_t WebsocketTxFrame(TCP_SERV_CONN *ts_conn, uint32_t opcode, uint8_t *raw_dat
 			err = tcpsrv_int_sent_data(ts_conn, raw_data, raw_len);
 		}
 	}
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 	else
 		os_printf("ws#tx err! ");
 #endif

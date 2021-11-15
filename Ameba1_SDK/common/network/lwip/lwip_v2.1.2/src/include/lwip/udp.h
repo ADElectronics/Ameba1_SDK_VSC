@@ -186,6 +186,11 @@ void udp_debug_print(struct udp_hdr *udphdr);
 
 void udp_netif_ip_addr_changed(const ip_addr_t* old_addr, const ip_addr_t* new_addr);
 
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+void udp_randomize_local_port(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

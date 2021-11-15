@@ -17,9 +17,10 @@ uint8_t web_auth(uint8_t *pbuf, size_t declen)
 {
    uint8_t * psw = strchr(pbuf, ':');
 
+#if USE_WEB_AUTH_LEVEL
    if(psw != NULL)
    {
-#if USE_WEB_AUTH_LEVEL
+
       if(strcmp(pbuf, "rtl871x:webfs_write") == 0)
       {
          return WEB_AUTH_LEVEL_WEBFS;
@@ -32,7 +33,7 @@ uint8_t web_auth(uint8_t *pbuf, size_t declen)
       {
          return WEB_AUTH_LEVEL_SUPERVISOR;
       }
-#endif
+
       *psw++ = 0;
       // TODO: переделать под стандартный API...
       /*
@@ -44,6 +45,10 @@ uint8_t web_auth(uint8_t *pbuf, size_t declen)
       {
          return WEB_AUTH_LEVEL_USER1;
       }*/
+      return WEB_AUTH_LEVEL_USER;
    }
    return WEB_AUTH_NONE;
+#else
+   return 0x01;
+#endif
 }

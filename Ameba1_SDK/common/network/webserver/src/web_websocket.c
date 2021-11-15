@@ -32,7 +32,7 @@ err_t websock_tx_frame(TCP_SERV_CONN *ts_conn, uint32_t opcode, uint8_t *raw_dat
 {
 	err_t err = WebsocketTxFrame(ts_conn, opcode, raw_data, raw_len);
 	if(err != ERR_OK) {
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 		os_printf("ws%utx[%u] error %d!\n", opcode, raw_len, err);
 #endif
 		((WEB_SRV_CONN *)ts_conn->linkd)->webflag |= SCB_DISCONNECT;
@@ -67,7 +67,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 	uint16_t len;
 	uint8_t *pstr;
 
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 	os_printf("ws_rx[%u]%u ", ts_conn->sizei, ts_conn->cntri);
 #endif
 	if(ts_conn->sizei == 0) return TRUE; // докачивать
@@ -79,7 +79,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 		return FALSE;
 	}
 	if(ts_conn->sizei > MAX_RX_BUF_SIZE) {
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 		os_printf("ws:rxbuf_full! ");
 #endif
 		// убить буфер ts_conn->pbufi и ответить ошибкой WS_CLOSE_UNEXPECTED_ERROR
@@ -99,12 +99,12 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 			len = mMIN(ws->frame_len - ws->cur_len, mMIN(MAX_WS_DATA_BLK_SIZE, len));
 			// размаскировать
 			if((ws->flg & WS_FLG_MASK) != 0) WebsocketMask(ws, pstr, len);
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 			os_printf("wsfr[%u]blk[%u]at:%u ", ws->frame_len, len, ws->cur_len);
 #endif
 			switch(ws->status) {
 				case sw_frs_binary:
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 					os_printf("ws:bin ");
 #endif
 					if(ws->frame_len != 0) {
@@ -120,10 +120,10 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 					ts_conn->cntri += len;
 					break;
 				case sw_frs_text:
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 					os_printf("ws:txt ");
 
-#if DEBUGSOO > 2
+#if WEBSERVER_DEBUG_EN > 2
 					if(ws->frame_len != 0) {
 						uint8_t tt = pstr[len];
 						pstr[len] = 0;
@@ -135,7 +135,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 					if(ws->frame_len == ws->cur_len + len && ws->frame_len != 0) { // полное соо
 						web_conn->msgbufsize = tcp_sndbuf(ts_conn->pcb); // сколько можем вывести сейчас?
 						if (web_conn->msgbufsize < MIN_SEND_SIZE) {
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 							os_printf("ws:sndbuf=%u! ", web_conn->msgbufsize);
 #endif
 							websock_tx_close_err(ts_conn, WS_CLOSE_UNEXPECTED_ERROR);
@@ -155,7 +155,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 							if(web_conn->msgbuf) free(web_conn->msgbuf);
 							web_conn->msgbuf = (uint8_t *) malloc(web_conn->msgbufsize);
 							if (web_conn->msgbuf == NULL) {
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 								os_printf("ws:mem!\n");
 #endif
 								websock_tx_close_err(ts_conn, WS_CLOSE_UNEXPECTED_ERROR);
@@ -217,7 +217,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 //					break;
 //					break;
 				case sw_frs_ping:
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 					os_printf("ws:ping ");
 #endif
 					{
@@ -233,7 +233,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 					return TRUE; // докачивать
 //					break;
 				case sw_frs_pong:
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 					os_printf("ws:pong ");
 #endif
 					ws->cur_len += len;
@@ -241,14 +241,14 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 					break;
 //					return TRUE;
 				case sw_frs_close:
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 				os_printf("ws:close ");
 #endif
 //				if((ws->flg & WS_FLG_CLOSE) == 0) {
 				{
 					if(len >= 2) {
 					uint32_t close_code = (pstr[0]<<8) | pstr[1];
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 1
 						os_printf("code:%d ", close_code);
 #endif
 						if(close_code == WS_CLOSE_NORMAL)	websock_tx_close_err(ts_conn, WS_CLOSE_NORMAL);
@@ -267,7 +267,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 				ts_conn->cntri += len; */
 				return FALSE;
 			default:
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 				os_printf("ws:f?! ");
 #endif
 				websock_tx_close_err(ts_conn, WS_CLOSE_UNEXPECTED_ERROR);
@@ -279,7 +279,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 		else
 		if(ws->cur_len >= ws->frame_len) { // прием и разбор нового фрейма
 			if((ws->flg & WS_FLG_FIN) != 0) { // обработка
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 				os_printf("ws_rx:fin=%u ", ws->cur_len);
 #endif
 			}
@@ -287,7 +287,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 				uint32_t ret = WebsocketHead(ws, pstr, len);
 				if(ret >= WS_CLOSE_NORMAL) { // error или close
 
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 					os_printf("ws:txerr=%u ", ret);
 #endif
 					websock_tx_close_err(ts_conn, ret);
@@ -295,7 +295,7 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 					return FALSE; // error
 				}
 				else if(ret == 0) {
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 					os_printf("ws_rx... ");
 #endif
 					return TRUE; // докачивать
@@ -315,11 +315,11 @@ bool websock_rx_data(TCP_SERV_CONN *ts_conn)
 */
 			}
 		}
-#if DEBUGSOO > 3
+#if WEBSERVER_DEBUG_EN > 3
 		os_printf("trim%u-%u ", ts_conn->sizei, ts_conn->sizei - ts_conn->cntri );
 #endif
 		if(!web_trim_bufi(ts_conn, &ts_conn->pbufi[ts_conn->cntri], ts_conn->sizei - ts_conn->cntri)) {
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 			os_printf("ws:trim_err! ");
 #endif
 			// убить буфер ts_conn->pbufi и ответить ошибкой WS_CLOSE_UNEXPECTED_ERROR

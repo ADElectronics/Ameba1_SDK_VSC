@@ -9,6 +9,7 @@
 #define _INCLUDE_WEB_SRV_H_
 
 #include "tcpsrv.h"
+#include "FreeRTOS.h"
 #include "webserver_config.h"
 
 #ifdef WEBSOCKET_EN
@@ -16,8 +17,6 @@
 #endif
 
 #define WEB_SVERSION "0.2.0"
-//#define DEFAULT_WEB_PORT USE_WEB // 80
-//#define USE_WEB_AUTH_LEVEL 1
 
 // extended state data for each connection
 #define FileNameSize 64
@@ -26,6 +25,7 @@
 
 #define MAXLENBOUNDARY 64
 
+#ifdef USE_WEB_AUTH_LEVEL
 typedef enum
 {
    WEB_AUTH_NONE = 0,
@@ -35,6 +35,7 @@ typedef enum
    WEB_AUTH_LEVEL_OTA,
    WEB_AUTH_LEVEL_SUPERVISOR
 } WEB_AUTH_LEVEL_TYPE;
+#endif
 
 /****************************************************************************
    File and Content Type Settings
@@ -88,7 +89,7 @@ static const char *httpContentTypes[] =
    "magnus-internal/cgi",           // HTTP_CGI
    "text/xml",                      // HTTP_XML
    "text/css",                      // HTTP_CSS
-   "image/vnd.microsoft.icon",      // HTTP_ICO
+   "image/x-icon",                  // HTTP_ICO
    "image/gif",                     // HTTP_GIF
    "image/png",                     // HTTP_PNG
    "image/jpeg",                    // HTTP_JPG

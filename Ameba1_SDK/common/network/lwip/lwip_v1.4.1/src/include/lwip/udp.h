@@ -162,6 +162,11 @@ void udp_debug_print(struct udp_hdr *udphdr);
 #define udp_debug_print(udphdr)
 #endif
 
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+void udp_randomize_local_port(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

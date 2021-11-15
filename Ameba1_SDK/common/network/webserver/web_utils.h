@@ -20,14 +20,15 @@
 #undef mMAX
 #define mMAX(a, b)  ((a > b)? a : b)
 
-typedef enum {
-	SEG_ID_ROM = 0,
-	SEG_ID_FLASH,
-	SEG_ID_SRAM,
-	SEG_ID_SOC,
-	SEG_ID_CPU,
-	SEG_ID_ERR,
-	SEG_ID_MAX
+typedef enum
+{
+   SEG_ID_ROM = 0,
+   SEG_ID_FLASH,
+   SEG_ID_SRAM,
+   SEG_ID_SOC,
+   SEG_ID_CPU,
+   SEG_ID_ERR,
+   SEG_ID_MAX
 } SEG_ID;
 
 extern const uint32_t tab_seg_def[];
@@ -58,12 +59,9 @@ int rom_xstrcpy(char * pd, const char * ps);
 void *zalloc(size_t xWantedSize);
 
 #if CONFIG_DEBUG_LOG > 0
-#define DEBUGSOO 2
 #define os_printf(...) rtl_printf(__VA_ARGS__)
 #else
-#define DEBUGSOO 0
 #define os_printf(...)
 #endif
-
 
 #endif /* _INCLUDE_WEB_UTILS_H_ */

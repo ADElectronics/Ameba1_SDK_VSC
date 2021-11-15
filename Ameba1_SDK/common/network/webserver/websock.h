@@ -1,7 +1,7 @@
 /*
  * File: websock.h
  * Small WEB server ESP8266EX
- * Author: PV`
+ * Author: pvvx
  */
 
 #ifndef _WEBSOCK_H_
@@ -39,7 +39,6 @@
 */
 
 #define WS_FRAGMENT_FIN		0x80
-//#define WS_RSVD_BITS		(7 << 4)
 #define WS_OPCODE_BITS		0x7F
 #define WS_OPCODE_CONTINUE	0x0 // фрейм-продолжение для фрагментированного сообщения
 #define WS_OPCODE_TEXT		0x1	// текстовый фрейм
@@ -65,35 +64,39 @@
 
 typedef struct _WS_FRSTAT
 {
-	uint32_t	frame_len;	// размер данных в заголовке фрейма
-	uint32_t	cur_len;	// счетчик обработанных данных
-	union {
-		unsigned char uc[4];
-		unsigned int ud;
-	} mask;	// маска принимаемых данных
-	uint8_t	status;
-	uint8_t	flg;
-	uint8_t	head_len;
+   uint32_t	frame_len; // размер данных в заголовке фрейма
+   uint32_t	cur_len; // счетчик обработанных данных
+   union
+   {
+      unsigned char uc[4];
+      unsigned int ud;
+   } mask; // маска принимаемых данных
+   uint8_t	status;
+   uint8_t	flg;
+   uint8_t	head_len;
 } WS_FRSTAT; //  __attribute__((packed))
 
 #define WS_FLG_MASK			0x01
 #define WS_FLG_FIN			0x02
 #define WS_FLG_CLOSE		0x04 // уже передано WS_CLOSE
 
-enum WS_FRAME_STATE {
-	sw_frs_none = 0,
-	sw_frs_text,
-	sw_frs_binary,
-	sw_frs_close,
-	sw_frs_ping,
-	sw_frs_pong
+enum WS_FRAME_STATE
+{
+   sw_frs_none = 0,
+   sw_frs_text,
+   sw_frs_binary,
+   sw_frs_close,
+   sw_frs_ping,
+   sw_frs_pong
 };
 
 extern const uint8_t WebSocketHTTPOkKey[]; // ICACHE_RODATA_ATTR = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept:%s\r\n\r\n"
 extern const uint8_t WebSocketAddKey[]; // ICACHE_RODATA_ATTR = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
 #define sizeWebSocketAddKey 36
 #define maxsizeWebSocketKey 64
 #define minsizeWebSocketKey 8
+
 extern const uint8_t *HTTPUpgrade; // = "Upgrade:";
 #define sizeHTTPUpgrade 8
 extern const uint8_t *HTTPwebsocket; // = "websocket";

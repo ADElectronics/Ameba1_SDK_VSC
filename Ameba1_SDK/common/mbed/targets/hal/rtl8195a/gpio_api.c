@@ -121,7 +121,7 @@ void gpio_init(gpio_t *obj, PinName pin)
         return;
 
     obj->pin = pin;
-    //obj->mode = PullNone; // äëÿ áûñòðîé èíèöèàëèçàöèè
+    //obj->mode = PullNone; // Ð´Ð»Ñ Ð±Ñ‹ÑÑ‚Ñ€Ð¾Ð¹ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸
     //obj->direction = PIN_INPUT;
     pin_name = gpio_set(pin); // get the IP pin name
     obj->hal_pin.pin_name = pin_name;

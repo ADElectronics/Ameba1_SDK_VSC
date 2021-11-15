@@ -1,6 +1,6 @@
 /******************************************************************************
- * FileName: tcp_srv_conn.c
- * TCP сервачек для ESP8266
+ * FileName: tcpsrv.c
+ * TCP сервер для ESP8266
  * pvvx ver1.0 20/12/2014
  * Перекинут на RTL871X pvvx 2017
  * 2021.05 A_D fixes
@@ -10,13 +10,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "diag.h"
-//#include "flash_utils.h"
 #include "web_utils.h"
 #include "tcpsrv.h"
+#include "webserver_config.h"
 
-// Lwip funcs - http://www.ecoscentric.com/ecospro/doc/html/ref/lwip.html
-
-#define ts_printf(...) rtl_printf(__VA_ARGS__)
 #define system_get_free_heap_size xPortGetFreeHeapSize
 
 extern void *pvPortZalloc(size_t xWantedSize);
@@ -34,24 +31,15 @@ extern struct tcp_pcb *tcp_active_pcbs;
 #define os_zalloc(p) pvPortZalloc(p)
 #undef os_realloc
 #define os_realloc(p,s) pvPortReAlloc(p,s)
-/*
-void *pvPortZalloc( size_t xWantedSize )
-{
-	void *pvReturn = pvPortMalloc(xWantedSize);
-	if(pvReturn != NULL) memset(pvReturn, 0, xWantedSize);
-	return pvReturn;
-}
-*/
 
 TCP_SERV_CFG *phcfg; // = NULL; // начальный указатель в памяти на структуры открытых сервачков
 
-#if DEBUGSOO > 0
+#if WEBSERVER_DEBUG_EN > 0
 const uint8_t txt_tcpsrv_NULL_pointer[] = "tcpsrv: NULL pointer!\n";
 const uint8_t txt_tcpsrv_already_initialized[] = "tcpsrv: already initialized!\n";
 const uint8_t txt_tcpsrv_out_of_mem[] = "tcpsrv: out of mem!\n";
 #endif
 
-// пред.описание...
 static void tcpsrv_list_delete(TCP_SERV_CONN * ts_conn);
 static void tcpsrv_disconnect_successful(TCP_SERV_CONN * ts_conn);
 static void tcpsrv_server_close(TCP_SERV_CONN * ts_conn);
@@ -59,6 +47,7 @@ static err_t tcpsrv_poll(void *arg, struct tcp_pcb *pcb);
 static void tcpsrv_error(void *arg, err_t err);
 
 static const char srvContenErrX[] = "?";
+
 /******************************************************************************
  * FunctionName : tspsrv_error_msg
  * Description  : строка ошибки по номеру
@@ -82,8 +71,9 @@ extern const char * const tcp_state_str[];
  *******************************************************************************/
 const char * tspsrv_tcp_state_msg(enum tcp_state state)
 {
-	if(state > TIME_WAIT && state < CLOSED) return srvContenErrX;
-	return tcp_state_str[state];
+   if(state > TIME_WAIT && state < CLOSED)
+      return srvContenErrX;
+   return tcp_state_str[state];
 }
 /******************************************************************************
  * FunctionName : tspsrv_tcp_state_msg
@@ -91,79 +81,88 @@ const char * tspsrv_tcp_state_msg(enum tcp_state state)
  * Parameters   : LwIP tcp_state
  * Returns      : указатель на строку
  *******************************************************************************/
-static const char *msg_srvconn_state[] = {
-      "NONE",
-      "CLOSEWAIT",
-      "LISTEN",
-      "CONNECT",
-      "CLOSED"
+static const char *msg_srvconn_state[] =
+{
+   "NONE",
+   "CLOSEWAIT",
+   "LISTEN",
+   "CONNECT",
+   "CLOSED"
 };
 
 const char * tspsrv_srvconn_state_msg(enum srvconn_state state)
 {
-	if(state > SRVCONN_CLOSED && state < SRVCONN_NONE) return (const char *) srvContenErrX;
-	return (const char *) msg_srvconn_state[state];
+   if(state > SRVCONN_CLOSED && state < SRVCONN_NONE)
+      return (const char *)srvContenErrX;
+   return (const char *)msg_srvconn_state[state];
 }
-//#endif
+
 /******************************************************************************
  * FunctionName : tcpsrv_print_remote_info
- * Description  : выводит remote_ip:remote_port [conn_count] ts_printf("srv x.x.x.x:x [n] ")
+ * Description  : выводит remote_ip:remote_port [conn_count] os_printf("srv x.x.x.x:x [n] ")
  * Parameters   : TCP_SERV_CONN * ts_conn
  * Returns      : none
  *******************************************************************************/
-void tcpsrv_print_remote_info(TCP_SERV_CONN *ts_conn) {
-//#if DEBUGSOO > 0
-	uint16_t port;
-	if(ts_conn->pcb != NULL) port = ts_conn->pcb->local_port;
-	else port = ts_conn->pcfg->port;
-	ts_printf("srv[%u] %d.%d.%d.%d:%d [%d] ", port,
-			ts_conn->remote_ip.b[0], ts_conn->remote_ip.b[1],
-			ts_conn->remote_ip.b[2], ts_conn->remote_ip.b[3],
-			ts_conn->remote_port, ts_conn->pcfg->conn_count);
-//#endif
+void tcpsrv_print_remote_info(TCP_SERV_CONN *ts_conn)
+{
+   uint16_t port;
+   if(ts_conn->pcb != NULL)
+      port = ts_conn->pcb->local_port;
+   else
+      port = ts_conn->pcfg->port;
+
+   os_printf("srv[%u] %d.%d.%d.%d:%d [%d] ", port,
+         ts_conn->remote_ip.b[0], ts_conn->remote_ip.b[1],
+         ts_conn->remote_ip.b[2], ts_conn->remote_ip.b[3],
+         ts_conn->remote_port, ts_conn->pcfg->conn_count);
 }
 /******************************************************************************
  * Default call back functions
  ******************************************************************************/
 //------------------------------------------------------------------------------
-void tcpsrv_disconnect_calback_default(TCP_SERV_CONN *ts_conn) {
-	ts_conn->pcb = NULL;
-#if DEBUGSOO > 1
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("disconnect\n");
+void tcpsrv_disconnect_calback_default(TCP_SERV_CONN *ts_conn)
+{
+   ts_conn->pcb = NULL;
+#if WEBSERVER_DEBUG_EN > 0
+   tcpsrv_print_remote_info(ts_conn);
+   os_printf("disconnect\n");
 #endif
 }
 //------------------------------------------------------------------------------
-err_t tcpsrv_listen_default(TCP_SERV_CONN *ts_conn) {
-#if DEBUGSOO > 1
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("listen\n");
+err_t tcpsrv_listen_default(TCP_SERV_CONN *ts_conn)
+{
+#if WEBSERVER_DEBUG_EN > 0
+   tcpsrv_print_remote_info(ts_conn);
+   os_printf("listen\n");
 #endif
-	return ERR_OK;
+   return ERR_OK;
 }
 //------------------------------------------------------------------------------
-err_t tcpsrv_connected_default(TCP_SERV_CONN *ts_conn) {
-#if DEBUGSOO > 1
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("connected\n");
+err_t tcpsrv_connected_default(TCP_SERV_CONN *ts_conn)
+{
+#if WEBSERVER_DEBUG_EN > 0
+   tcpsrv_print_remote_info(ts_conn);
+   os_printf("connected\n");
 #endif
-	return ERR_OK;
+   return ERR_OK;
 }
 //------------------------------------------------------------------------------
-err_t tcpsrv_sent_callback_default(TCP_SERV_CONN *ts_conn) {
-#if DEBUGSOO > 1
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("sent_cb\n");
+err_t tcpsrv_sent_callback_default(TCP_SERV_CONN *ts_conn)
+{
+#if WEBSERVER_DEBUG_EN > 0
+   tcpsrv_print_remote_info(ts_conn);
+   os_printf("sent_cb\n");
 #endif
-	return ERR_OK;
+   return ERR_OK;
 }
 //------------------------------------------------------------------------------
-err_t tcpsrv_received_data_default(TCP_SERV_CONN *ts_conn) {
-#if DEBUGSOO > 1
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("received, buffer %d bytes\n", ts_conn->sizei);
+err_t tcpsrv_received_data_default(TCP_SERV_CONN *ts_conn)
+{
+#if WEBSERVER_DEBUG_EN > 0
+   tcpsrv_print_remote_info(ts_conn);
+   os_printf("received, buffer %d bytes\n", ts_conn->sizei);
 #endif
-	return ERR_OK;
+   return ERR_OK;
 }
 /******************************************************************************
  * FunctionName : tcpsrv_check_max_tm_tcp_pcb
@@ -173,25 +172,21 @@ err_t tcpsrv_received_data_default(TCP_SERV_CONN *ts_conn) {
  *******************************************************************************/
 static void tcpsrv_check_max_tm_tcp_pcb(void)
 {
-	struct tcp_pcb *pcb;
-	int i = 0;
-	for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) i++;
-#if DEBUGSOO > 4
-	ts_printf("tcpsrv: check %d tm pcb\n", i);
-#endif
-	while(i-- > MAX_TIME_WAIT_PCB) {
-		struct tcp_pcb *inactive = NULL;
-		for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
-			inactive = pcb;
-		}
-#if DEBUGSOO > 3
-		ts_printf("tcpsrv: kill %d tm pcb\n", i);
-#endif
-		if(inactive != NULL) {
-			tcp_pcb_remove(&tcp_tw_pcbs, inactive);
-			memp_free(MEMP_TCP_PCB, inactive);
-		}
-	}
+   struct tcp_pcb *pcb;
+   int i = 0;
+   for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
+      i++;
+   while(i-- > MAX_TIME_WAIT_PCB)
+   {
+      struct tcp_pcb *inactive = NULL;
+      for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
+         inactive = pcb;
+      if(inactive != NULL)
+      {
+         tcp_pcb_remove(&tcp_tw_pcbs, inactive);
+         memp_free(MEMP_TCP_PCB, inactive);
+      }
+   }
 }
 /******************************************************************************
  * FunctionName : find_tcp_pcb
@@ -199,27 +194,28 @@ static void tcpsrv_check_max_tm_tcp_pcb(void)
  * Parameters   : TCP_SERV_CONN * ts_conn
  * Returns      : *pcb or NULL
  *******************************************************************************/
-struct tcp_pcb * find_tcp_pcb(TCP_SERV_CONN * ts_conn) {
-	struct tcp_pcb *pcb = ts_conn->pcb;
-	if (pcb) {
-		uint16_t remote_port = ts_conn->remote_port;
-		uint16_t local_port = ts_conn->pcfg->port;
-		uint32_t ip = ts_conn->remote_ip.dw;
-		if ((pcb->remote_port == remote_port) && (pcb->local_port == local_port)
-				&& (pcb->remote_ip.addr == ip))
-			return pcb;
-		for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
-			if ((pcb->remote_port == remote_port) && (pcb->local_port == local_port)
-					&& (pcb->remote_ip.addr == ip))
-				return pcb;
-		};
-		for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
-			if ((pcb->remote_port == remote_port) && (pcb->local_port == local_port)
-					&& (pcb->remote_ip.addr == ip))
-				return pcb;
-		};
-	}
-	return NULL;
+struct tcp_pcb * find_tcp_pcb(TCP_SERV_CONN * ts_conn)
+{
+   struct tcp_pcb *pcb = ts_conn->pcb;
+   if(pcb)
+   {
+      uint16_t remote_port = ts_conn->remote_port;
+      uint16_t local_port = ts_conn->pcfg->port;
+      uint32_t ip = ts_conn->remote_ip.dw;
+      if((pcb->remote_port == remote_port) && (pcb->local_port == local_port) && (pcb->remote_ip.addr == ip))
+         return pcb;
+      for(pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
+      {
+         if((pcb->remote_port == remote_port) && (pcb->local_port == local_port) && (pcb->remote_ip.addr == ip))
+            return pcb;
+      };
+      for(pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
+      {
+         if((pcb->remote_port == remote_port) && (pcb->local_port == local_port) && (pcb->remote_ip.addr == ip))
+            return pcb;
+      };
+   }
+   return NULL;
 }
 /******************************************************************************
  * FunctionName : tcpsrv_disconnect
@@ -227,10 +223,13 @@ struct tcp_pcb * find_tcp_pcb(TCP_SERV_CONN * ts_conn) {
  * Parameters   : TCP_SERV_CONN * ts_conn
  * Returns      : none
  *******************************************************************************/
-void tcpsrv_disconnect(TCP_SERV_CONN * ts_conn) {
-	if (ts_conn == NULL || ts_conn->state == SRVCONN_CLOSEWAIT) return; // уже закрывается
-	ts_conn->pcb = find_tcp_pcb(ts_conn); // ещё жива данная pcb ?
-	if (ts_conn->pcb != NULL) tcpsrv_server_close(ts_conn);
+void tcpsrv_disconnect(TCP_SERV_CONN * ts_conn)
+{
+   if(ts_conn == NULL || ts_conn->state == SRVCONN_CLOSEWAIT)
+      return; // уже закрывается
+   ts_conn->pcb = find_tcp_pcb(ts_conn); // ещё жива данная pcb ?
+   if(ts_conn->pcb != NULL)
+      tcpsrv_server_close(ts_conn);
 }
 /******************************************************************************
  * FunctionName : internal fun: tcpsrv_int_sent_data
@@ -241,7 +240,8 @@ void tcpsrv_disconnect(TCP_SERV_CONN * ts_conn) {
  *                uint16_t length - кол-во передаваемых байт
  * Returns      : tcp error
  ******************************************************************************/
-err_t tcpsrv_int_sent_data(TCP_SERV_CONN * ts_conn, uint8_t *psent, uint16_t length) {
+err_t tcpsrv_int_sent_data(TCP_SERV_CONN * ts_conn, uint8_t *psent, uint16_t length)
+{
 	err_t err = ERR_ARG;
 	if(ts_conn == NULL) return err;
 	ts_conn->pcb = find_tcp_pcb(ts_conn); // ещё жива данная pcb ?
@@ -249,8 +249,8 @@ err_t tcpsrv_int_sent_data(TCP_SERV_CONN * ts_conn, uint8_t *psent, uint16_t len
 	if(pcb == NULL || ts_conn->state == SRVCONN_CLOSEWAIT) return ERR_CONN;
 	ts_conn->flag.busy_bufo = 1; // буфер bufo занят
 	if(tcp_sndbuf(pcb) < length) {
-#if DEBUGSOO > 1
-		ts_printf("sent_data length (%u) > sndbuf (%u)!\n", length, tcp_sndbuf(pcb));
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf("sent_data length (%u) > sndbuf (%u)!\n", length, tcp_sndbuf(pcb));
 #endif
 		return err;
 	}
@@ -263,8 +263,8 @@ err_t tcpsrv_int_sent_data(TCP_SERV_CONN * ts_conn, uint8_t *psent, uint16_t len
 			ts_conn->flag.wait_sent = 1; // ожидать завершения передачи (sent_cb)
 			err = tcp_output(pcb); // передать что влезло
 		} else { // ts_conn->state = SRVCONN_CLOSE;
-#if DEBUGSOO > 1
-			ts_printf("tcp_write(%p, %p, %u) = %d! pbuf = %u\n", pcb, psent, length, err, tcp_sndbuf(pcb));
+#if WEBSERVER_DEBUG_EN > 0
+			os_printf("tcp_write(%p, %p, %u) = %d! pbuf = %u\n", pcb, psent, length, err, tcp_sndbuf(pcb));
 #endif
 			ts_conn->flag.wait_sent = 0;
 			tcpsrv_server_close(ts_conn);
@@ -323,14 +323,8 @@ static err_t recv_trim_bufi(TCP_SERV_CONN * ts_conn, uint32_t newadd)
 						len += newadd; //
 						ts_conn->pbufi = (uint8_t *)os_realloc(ts_conn->pbufi, len + 1);	//mem_trim(ts_conn->pbufi, len);
 						if(ts_conn->pbufi == NULL) {
-#if DEBUGSOO > 2
-							ts_printf("memtrim err %p[%d]  ", ts_conn->pbufi, len + 1);
-#endif
 							return ERR_MEM;
 						}
-#if DEBUGSOO > 2
-						ts_printf("memi%p[%d] ", ts_conn->pbufi,  len);
-#endif
 					}
 					ts_conn->pbufi[len] = '\0'; // вместо os_zalloc;
 					ts_conn->cntri = 0;
@@ -347,15 +341,9 @@ static err_t recv_trim_bufi(TCP_SERV_CONN * ts_conn, uint32_t newadd)
 		// подготовка нового буфера, если его нет или не лезет дополнение
 		uint8_t * newbufi = (uint8_t *) os_malloc(len + newadd + 1);
 		if (newbufi == NULL) {
-#if DEBUGSOO > 2
-			ts_printf("memerr %p[%d]  ", newbufi, len + newadd);
-#endif
 			ts_conn->flag.busy_bufi = 0; // обработка bufi окончена
 			return ERR_MEM;
 		}
-#if DEBUGSOO > 2
-		ts_printf("memi%p[%d] ", newbufi,  len + newadd);
-#endif
 		newbufi[len + newadd] = '\0'; // вместо os_zalloc
 		if(len)	{
 			memcpy(newbufi, &ts_conn->pbufi[ts_conn->cntri], len);
@@ -380,9 +368,6 @@ static err_t recv_trim_bufi(TCP_SERV_CONN * ts_conn, uint32_t newadd)
 			ts_conn->sizei = len;
 			ts_conn->pbufi = (uint8_t *)os_realloc(ts_conn->pbufi, len + 1);	//mem_trim(ts_conn->pbufi, len);
 			if(ts_conn->pbufi == NULL) {
-#if DEBUGSOO > 2
-				ts_printf("memtrim err %p[%d]  ", ts_conn->pbufi, len + 1);
-#endif
 				ts_conn->flag.busy_bufi = 0; // обработка bufi окончена
 				return ERR_MEM;
 			}
@@ -419,9 +404,6 @@ static err_t tcpsrv_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, 
 			|| (ts_conn->state == SRVCONN_CLOSEWAIT)) { // соединение закрыто? нет.
 		tcp_recved(pcb, p->tot_len + ts_conn->unrecved_bytes); // сообщает стеку, что съели len и можно посылать ACK и принимать новые данные.
 		ts_conn->unrecved_bytes = 0;
-#if DEBUGSOO > 3
-		ts_printf("rec_null %d of %d\n", ts_conn->cntri, p->tot_len);
-#endif
 		pbuf_free(p); // данные выели
 		return ERR_OK;
 	};
@@ -438,9 +420,6 @@ static err_t tcpsrv_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, 
 			 tcp_recved(pcb, len); // сообщает стеку, что съели len и можно посылать ACK и принимать новые данные.
 		}
 		else ts_conn->unrecved_bytes += len;
-#if DEBUGSOO > 3
-		ts_printf("rec %d of %d :\n", p->tot_len, ts_conn->sizei);
-#endif
 		err = ts_conn->pcfg->func_recv(ts_conn);
 		err_t err2 = recv_trim_bufi(ts_conn, 0); // оптимизировать размер занимаемый буфером
 		if(err2 != ERR_OK) return err2;
@@ -459,9 +438,6 @@ static err_t tcpsrv_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, 
 void tcpsrv_unrecved_win(TCP_SERV_CONN *ts_conn) {
 	if (ts_conn->unrecved_bytes) {
 		// update the TCP window
-#if DEBUGSOO > 3
-		ts_printf("recved_bytes=%d\n", ts_conn->unrecved_bytes);
-#endif
 #if 1
 		if(ts_conn->pcb != NULL) tcp_recved(ts_conn->pcb, ts_conn->unrecved_bytes);
 #else
@@ -491,19 +467,12 @@ static void tcpsrv_server_close(TCP_SERV_CONN * ts_conn) {
 
 	struct tcp_pcb *pcb = ts_conn->pcb;
 	if(pcb == NULL) {
-#if DEBUGSOO > 3
-		ts_printf("tcpsrv_server_close, state: %s, pcb = NULL!\n", tspsrv_srvconn_state_msg(ts_conn->state));
-#endif
 		return;
 	}
-#if DEBUGSOO > 3
-	ts_printf("tcpsrv_server_close[%d], state: %s\n", pcb->local_port, tspsrv_srvconn_state_msg(ts_conn->state));
+#if WEBSERVER_DEBUG_EN > 0
+	os_printf("tcpsrv_server_close[%d], state: %s\n", pcb->local_port, tspsrv_srvconn_state_msg(ts_conn->state));
 #endif
 	if(ts_conn->state != SRVCONN_CLOSEWAIT && ts_conn->state != SRVCONN_CLOSED) {
-#if DEBUGSOO > 2
-		tcpsrv_print_remote_info(ts_conn);
-		ts_printf("start close...\n");
-#endif
 		ts_conn->state = SRVCONN_CLOSEWAIT;
 		ts_conn->recv_check = 0;
 		ts_conn->flag.wait_sent = 0; // блок передан
@@ -536,15 +505,12 @@ static void tcpsrv_server_close(TCP_SERV_CONN * ts_conn) {
 	if(ts_conn->state == SRVCONN_CLOSEWAIT || ts_conn->state == SRVCONN_CLOSED) {
 		if (pcb->state == CLOSED || pcb->state == TIME_WAIT) {
 			/*remove the node from the server's active connection list*/
-#if DEBUGSOO > 3
-			ts_printf("close[%d]\n", pcb->local_port);
-#endif
 			tcpsrv_disconnect_successful(ts_conn);
 		} else {
 			if (ts_conn->recv_check > 3) { // счет до принудительного закрытия 3 раза по TCP_SRV_CLOSE_WAIT
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 0
 				tcpsrv_print_remote_info(ts_conn);
-				ts_printf("tcp_abandon!\n");
+				os_printf("tcp_abandon!\n");
 #endif
 				tcp_poll(pcb, NULL, 0);
 //?/			tcp_err(pcb, NULL);
@@ -554,25 +520,25 @@ static void tcpsrv_server_close(TCP_SERV_CONN * ts_conn) {
 				tcpsrv_disconnect_successful(ts_conn);
 			}
 			else if (tcp_close(pcb) != ERR_OK) { // послать закрытие соединения, closing failed
-#if DEBUGSOO > 1
+#if WEBSERVER_DEBUG_EN > 0
 				tcpsrv_print_remote_info(ts_conn);
-				ts_printf("+ncls+[%d]\n", pcb->local_port);
+				os_printf("+ncls+[%d]\n", pcb->local_port);
 #endif
 				// closing failed, try again later
 				tcp_poll(pcb, tcpsrv_poll, 2*(TCP_SRV_CLOSE_WAIT));
 			}
 			else {
-#if DEBUGSOO > 3
-				ts_printf("tcp_close[%d] ok.\n", pcb->local_port);
+#if WEBSERVER_DEBUG_EN > 0
+				os_printf("tcp_close[%d] ok.\n", pcb->local_port);
 #endif
 				tcpsrv_disconnect_successful(ts_conn);
 			}
 		}
 	}
-#if DEBUGSOO > 2
+#if WEBSERVER_DEBUG_EN > 0
 	else {
 		tcpsrv_print_remote_info(ts_conn);
-		ts_printf("already close!\n");
+		os_printf("already close!\n");
 	}
 #endif
 }
@@ -588,18 +554,11 @@ static void tcpsrv_server_close(TCP_SERV_CONN * ts_conn) {
 static err_t tcpsrv_poll(void *arg, struct tcp_pcb *pcb) {
 	TCP_SERV_CONN * ts_conn = arg;
 	if (ts_conn == NULL) {
-#if DEBUGSOO > 3
-		ts_printf("poll, ts_conn = NULL! - abandon\n");
-#endif
 		tcp_poll(pcb, NULL, 0);
 		tcp_err(pcb, NULL);
 		tcp_abandon(pcb, 0);
 		return ERR_ABRT;
 	}
-#if DEBUGSOO > 3
-	tcpsrv_print_remote_info(ts_conn);
-	ts_printf("poll: %d %s#%s, %d,%d, pcb:%p\n", ts_conn->recv_check, tspsrv_srvconn_state_msg(ts_conn->state), tspsrv_tcp_state_msg(pcb->state), ts_conn->pcfg->time_wait_rec, ts_conn->pcfg->time_wait_cls), pcb;
-#endif
 	if (ts_conn->pcb != NULL && ts_conn->state != SRVCONN_CLOSEWAIT) {
 		ts_conn->recv_check++;
 		if (pcb->state == ESTABLISHED) {
@@ -634,9 +593,6 @@ static void tcpsrv_list_delete(TCP_SERV_CONN * ts_conn) {
 			ts_conn->pcfg->func_discon_cb(ts_conn);
 		if(phcfg == NULL || ts_conn->pcfg == NULL) return;  // если в func_discon_cb() было вызвано tcpsrv_close_all() и т.д.
 	}
-#if DEBUGSOO > 3
-	ts_printf("tcpsrv_list_delete (%p)\n", ts_conn->pcb);
-#endif
 	TCP_SERV_CONN ** p = &ts_conn->pcfg->conn_links;
 	TCP_SERV_CONN *tcpsrv_cmp = ts_conn->pcfg->conn_links;
 	while (tcpsrv_cmp != NULL) {
@@ -691,23 +647,16 @@ static void tcpsrv_error(void *arg, err_t err) {
 	TCP_SERV_CONN * ts_conn = arg;
 //	struct tcp_pcb *pcb = NULL;
 	if (ts_conn != NULL) {
-#if DEBUGSOO > 2
+#if WEBSERVER_DEBUG_EN > 0
 		tcpsrv_print_remote_info(ts_conn);
-		ts_printf("error %d (%s)\n", err, tspsrv_error_msg(err));
-#elif DEBUGSOO > 1
-		tcpsrv_print_remote_info(ts_conn);
-#ifdef LWIP_DEBUG
-		ts_printf("error %d (%s)\n", err, tspsrv_error_msg(err));
-#else
-		ts_printf("error %d\n", err);
-#endif
+		os_printf("error %d (%s)\n", err, tspsrv_error_msg(err));
 #endif
 		if (ts_conn->state != SRVCONN_CLOSEWAIT) {
 			if(ts_conn->pcb != NULL) {
 //					&& ts_conn->state != SRVCONN_CLOSED) {
 //					&& (ts_conn->state != SRVCONN_CONNECT || ts_conn->state == SRVCONN_LISTEN)) {
-#if DEBUGSOO > 1
-				ts_printf("eclose[%d]\n", ts_conn->pcfg->port);
+#if WEBSERVER_DEBUG_EN > 0
+				os_printf("eclose[%d]\n", ts_conn->pcfg->port);
 #endif
 				tcpsrv_list_delete(ts_conn); // remove the node from the server's connection list
 			};
@@ -728,31 +677,31 @@ static err_t tcpsrv_server_accept(void *arg, struct tcp_pcb *pcb, err_t err) {
 	TCP_SERV_CONN * ts_conn;
 	if (p == NULL)	return ERR_ARG;
 	if (system_get_free_heap_size() < p->min_heap) {
-#if DEBUGSOO > 1
-		ts_printf("srv[%u] new listen - low heap size!\n", p->port);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf("srv[%u] new listen - low heap size!\n", p->port);
 #endif
 		return ERR_MEM;
 	}
 	if (p->conn_count >= p->max_conn) {
 		if(p->flag.srv_reopen) {
-#if DEBUGSOO > 1
-			ts_printf("srv[%u] reconnect!\n", p->port);
+#if WEBSERVER_DEBUG_EN > 0
+			os_printf("srv[%u] reconnect!\n", p->port);
 #endif
 			if (p->conn_links != NULL) {
 				tspsrv_delete_pcb(p->conn_links);
 			};
 		}
 		else {
-#if DEBUGSOO > 1
-			ts_printf("srv[%u] new listen - max connection!\n", p->port);
+#if WEBSERVER_DEBUG_EN > 0
+			os_printf("srv[%u] new listen - max connection!\n", p->port);
 #endif
 			return ERR_CONN;
 		}
 	}
 	ts_conn = (TCP_SERV_CONN *) zalloc(sizeof(TCP_SERV_CONN));
 	if (ts_conn == NULL) {
-#if DEBUGSOO > 1
-		ts_printf("srv[%u] new listen - out of mem!\n", ts_conn->pcfg->port);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf("srv[%u] new listen - out of mem!\n", ts_conn->pcfg->port);
 #endif
 		return ERR_MEM;
 	}
@@ -809,16 +758,16 @@ TCP_SERV_CFG * tcpsrv_init(uint16_t portn) {
 	TCP_SERV_CFG * p;
 	for (p = phcfg; p != NULL; p = p->next) {
 		if (p->port == portn) {
-#if DEBUGSOO > 0
-		ts_printf(txt_tcpsrv_already_initialized);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf(txt_tcpsrv_already_initialized);
 #endif
 			return NULL;
 		}
 	}
 	p = (TCP_SERV_CFG *) zalloc(sizeof(TCP_SERV_CFG));
 	if (p == NULL) {
-#if DEBUGSOO > 0
-		ts_printf(txt_tcpsrv_out_of_mem);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf(txt_tcpsrv_out_of_mem);
 #endif
 		return NULL;
 	}
@@ -843,14 +792,14 @@ TCP_SERV_CFG * tcpsrv_init(uint16_t portn) {
 err_t tcpsrv_start(TCP_SERV_CFG *p) {
 	err_t err = ERR_OK;
 	if (p == NULL) {
-#if DEBUGSOO > 0
-		ts_printf(txt_tcpsrv_NULL_pointer);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf(txt_tcpsrv_NULL_pointer);
 #endif
 		return ERR_ARG;
 	}
 	if (p->pcb != NULL) {
-#if DEBUGSOO > 0
-		ts_printf(txt_tcpsrv_already_initialized);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf(txt_tcpsrv_already_initialized);
 #endif
 		return ERR_USE;
 	}
@@ -883,8 +832,8 @@ err_t tcpsrv_start(TCP_SERV_CFG *p) {
 		p->pcb = NULL;
 	} else
 		err = ERR_MEM;
-#if DEBUGSOO > 0
-		ts_printf("tcpsrv: not new tcp!\n");
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf("tcpsrv: not new tcp!\n");
 #endif
 	return err;
 }
@@ -893,8 +842,8 @@ err_t tcpsrv_start(TCP_SERV_CFG *p) {
  *******************************************************************************/
 err_t tcpsrv_close(TCP_SERV_CFG *p) {
 	if (p == NULL) {
-#if DEBUGSOO > 0
-		ts_printf(txt_tcpsrv_NULL_pointer);
+#if WEBSERVER_DEBUG_EN > 0
+		os_printf(txt_tcpsrv_NULL_pointer);
 #endif
 		return ERR_ARG;
 	};
@@ -914,9 +863,6 @@ err_t tcpsrv_close(TCP_SERV_CFG *p) {
 		pwr = &pcmp->next;
 		pcmp = pcmp->next;
 	};
-#if DEBUGSOO > 2
-	ts_printf("tcpsrv: srv_cfg not find!\n");
-#endif
 	return ERR_CONN;
 }
 /******************************************************************************
@@ -935,9 +881,6 @@ int tcpsrv_close_all_tcp_pcb(void)
 	struct tcp_pcb *pcb;
 	int ret = 0;
 	for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
-#if DEBUGSOO > 3
-		ts_printf("tcpsrv: abort %p pcb\n", pcb);
-#endif
 		tcp_abort(pcb);
 		ret = 1;
 	}
@@ -950,9 +893,6 @@ void tcpsrv_delete_all_tm_tcp_pcb(void)
 {
 	struct tcp_pcb *pcb;
 	for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
-#if DEBUGSOO > 3
-		ts_printf("tcpsrv: del tm %p pcb\n", pcb);
-#endif
 		tcp_pcb_remove(&tcp_tw_pcbs, pcb);
 		memp_free(MEMP_TCP_PCB, pcb);
 	}

@@ -1,9 +1,9 @@
 /******************************************************************************
  * FileName: flash_eep.h
  * Description: FLASH
- * Alternate SDK 
- * Author: PV`
- * (c) PV` 2015
+ * Alternate SDK
+ * Author: pvvx
+ * (c) pvvx 2015
 *******************************************************************************/
 
 #ifndef _FLASH_UTILS_H_

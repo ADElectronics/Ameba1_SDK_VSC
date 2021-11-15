@@ -69,14 +69,14 @@ static void webfs_Update(void);
  *****************************************************************************/
 void webfs_Init(void)
 {
-	disk_base_addr = webfs_BaseAddr();
-	memset((char *) &WEBFSStubs, 0xff, sizeof(WEBFSStubs));
-	// Validate the image and load numFiles
-	webfs_Update();
-#if DEBUGSOO > 0
-	os_printf("\nDisk init: %d files, addr = %p\n", numFiles, disk_base_addr);
+   disk_base_addr = webfs_BaseAddr();
+   memset((char *) &WEBFSStubs, 0xff, sizeof(WEBFSStubs));
+   // Validate the image and load numFiles
+   webfs_Update();
+#if WEBSERVER_DEBUG_EN > 0
+   os_printf("\nDisk init: %d files, addr = %p\n", numFiles, disk_base_addr);
 #endif
-	// тут надо расчет контрольки тела диска или другой контроль...
+   // тут надо расчет контрольки тела диска или другой контроль...
    isWEBFSLocked = (numFiles == 0) ? TRUE : FALSE;
 }
 
@@ -180,16 +180,14 @@ uint16_t  webfs_GetArray(webfs_handle_t hWEBFS, uint8_t* cData, uint16_t wLen)
    // Determine how many we can actually read
    if(wLen > WEBFSStubs[hWEBFS].bytesRem) wLen = WEBFSStubs[hWEBFS].bytesRem;
    // Make sure we're reading a valid address
-   if(WEBFSStubs[hWEBFS].addr == WEBFS_INVALID || wLen == 0)  return 0;
+   if(WEBFSStubs[hWEBFS].addr == WEBFS_INVALID || wLen == 0) return 0;
 
-   if(cData != NULL)
+   if(cData != NULL) // Read the data
    {
-      // Read the data
       _flash_mutex_lock();
-      _flash_read(WEBFSStubs[hWEBFS].addr + disk_base_addr, wLen, cData);
+      //_flash_read(WEBFSStubs[hWEBFS].addr + disk_base_addr, wLen, cData);
+      flash_stream_read(&flashobj, WEBFSStubs[hWEBFS].addr + disk_base_addr, wLen, cData);
       _flash_mutex_unlock();
-      //if(spi_flash_read(WEBFSStubs[hWEBFS].addr+WEBFS_HEAD_ADDR, cData, wLen)  != SPI_FLASH_RESULT_OK)
-      //   return 0;
    };
    WEBFSStubs[hWEBFS].addr += wLen;
    WEBFSStubs[hWEBFS].bytesRem -= wLen;
@@ -434,7 +432,7 @@ static void webfs_Update(void)
    webfs_GetArray(0, (uint8_t*)&dhead, sizeof(dhead));
    if(dhead.id == WEBFS_DISK_ID && dhead.ver == WEBFS_DISK_VER)
    {
-      numFiles = dhead.numFiles; 
+      numFiles = dhead.numFiles;
    }
    else
       numFiles = 0;

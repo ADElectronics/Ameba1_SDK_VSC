@@ -7,15 +7,12 @@
  */
 
 #include <rtl8195a.h>
-//#include <FreeRTOS.h>
-//#include <queue.h>
 #include <osdep_api.h>
 #include <osdep_service.h>
 #include "device_lock.h"
 #include "flash_api.h"
 #include "flash_eep.h"
 
-//-----------------------------------------------------------------------------
 #ifdef CONFIG_DEBUG_LOG
 #define DEBUGSOO CONFIG_DEBUG_LOG
 #else
@@ -27,195 +24,213 @@
 
 typedef union // заголовок объекта сохранения feep
 {
-	struct {
-	unsigned short size;
-	unsigned short id;
-	} __attribute__((packed)) n;
-	unsigned int x;
+   struct
+   {
+      unsigned short size;
+      unsigned short id;
+   } __attribute__((packed)) n;
+   unsigned int x;
 } __attribute__((packed)) fobj_head;
 
 #define fobj_head_size 4
 #define fobj_x_free 0xffffffff
 #define MAX_FOBJ_SIZE 512 // максимальный размер сохраняемых объeктов
 #define FMEM_ERROR_MAX 5
-//-----------------------------------------------------------------------------
-flash_t	flash;
-//QueueHandle_t flash_mutex;
-//-----------------------------------------------------------------------------
 
+flash_t	flash;
+extern flash_t flashobj;
+extern uint8_t fspic_isinit;
 
 /*-------------------------------------------------------------------------------------
  Копирует данные из области align(4) (flash, registers, ...) в область align(1) (ram)
 --------------------------------------------------------------------------------------*/
-void FLASH_EEP_ATTR copy_align4_to_align1(unsigned char * pd, void * ps, unsigned int len)
+void copy_align4_to_align1(unsigned char * pd, void * ps, unsigned int len)
 {
-	union {
-		unsigned char uc[4];
-		unsigned int ud;
-	}tmp;
-	unsigned int *p = (unsigned int *)((unsigned int)ps & (~3));
-	unsigned int xlen = (unsigned int)ps & 3;
-	//	unsigned int size = len;
+   union
+   {
+      unsigned char uc[4];
+      unsigned int ud;
+   } tmp;
+   unsigned int *p = (unsigned int *)((unsigned int)ps & (~3));
+   unsigned int xlen = (unsigned int)ps & 3;
 
-	if(xlen) {
-		tmp.ud = *p++;
-		while (len)  {
-			len--;
-			*pd++ = tmp.uc[xlen++];
-			if(xlen & 4) break;
-		}
-	}
-	xlen = len >> 2;
-	while(xlen) {
-		tmp.ud = *p++;
-		*pd++ = tmp.uc[0];
-		*pd++ = tmp.uc[1];
-		*pd++ = tmp.uc[2];
-		*pd++ = tmp.uc[3];
-		xlen--;
-	}
-	if(len & 3) {
-		tmp.ud = *p;
-		pd[0] = tmp.uc[0];
-		if(len & 2) {
-			pd[1] = tmp.uc[1];
-			if(len & 1) {
-				pd[2] = tmp.uc[2];
-			}
-		}
-	}
-	//	return size;
+   if(xlen)
+   {
+      tmp.ud = *p++;
+      while (len)
+      {
+         len--;
+         *pd++ = tmp.uc[xlen++];
+         if(xlen & 4) break;
+      }
+   }
+   xlen = len >> 2;
+   while(xlen)
+   {
+      tmp.ud = *p++;
+      *pd++ = tmp.uc[0];
+      *pd++ = tmp.uc[1];
+      *pd++ = tmp.uc[2];
+      *pd++ = tmp.uc[3];
+      xlen--;
+   }
+   if(len & 3)
+   {
+      tmp.ud = *p;
+      pd[0] = tmp.uc[0];
+      if(len & 2)
+      {
+         pd[1] = tmp.uc[1];
+         if(len & 1)
+         {
+            pd[2] = tmp.uc[2];
+         }
+      }
+   }
 }
 /*------------------------------------------------------------------------------------
  Копирует данные из области align(1) (ram) в область align(4) (flash, registers)
 --------------------------------------------------------------------------------------*/
-void FLASH_EEP_ATTR copy_align1_to_align4(void * pd, unsigned char * ps, unsigned int len)
+void copy_align1_to_align4(void * pd, unsigned char * ps, unsigned int len)
 {
-	union {
-		unsigned char uc[4];
-		unsigned int ud;
-	}tmp;
-	unsigned int *p = (unsigned int *)(((unsigned int)pd) & (~3));
-	unsigned int xlen = (unsigned int)pd & 3;
-//	unsigned int size = len;
-	if(xlen) {
-		tmp.ud = *p;
-		while (len)  {
-			len--;
-			tmp.uc[xlen++] = *ps++;
-			if(xlen & 4) break;
-		}
-		*p++ = tmp.ud;
-	}
-	xlen = len >> 2;
-	while(xlen) {
-		tmp.uc[0] = *ps++;
-		tmp.uc[1] = *ps++;
-		tmp.uc[2] = *ps++;
-		tmp.uc[3] = *ps++;
-		*p++ = tmp.ud;
-		xlen--;
-	}
-	if(len & 3) {
-		tmp.ud = *p;
-		tmp.uc[0] = ps[0];
-		if(len & 2) {
-			tmp.uc[1] = ps[1];
-			if(len & 1) {
-				tmp.uc[2] = ps[2];
-			}
-		}
-		*p = tmp.ud;
-	}
-//	return size;
+   union
+   {
+      unsigned char uc[4];
+      unsigned int ud;
+   } tmp;
+   unsigned int *p = (unsigned int *)(((unsigned int)pd) & (~3));
+   unsigned int xlen = (unsigned int)pd & 3;
+
+   if(xlen)
+   {
+      tmp.ud = *p;
+      while (len)
+      {
+         len--;
+         tmp.uc[xlen++] = *ps++;
+         if(xlen & 4) break;
+      }
+      *p++ = tmp.ud;
+   }
+   xlen = len >> 2;
+   while(xlen)
+   {
+      tmp.uc[0] = *ps++;
+      tmp.uc[1] = *ps++;
+      tmp.uc[2] = *ps++;
+      tmp.uc[3] = *ps++;
+      *p++ = tmp.ud;
+      xlen--;
+   }
+   if(len & 3)
+   {
+      tmp.ud = *p;
+      tmp.uc[0] = ps[0];
+      if(len & 2)
+      {
+         tmp.uc[1] = ps[1];
+         if(len & 1)
+         {
+            tmp.uc[2] = ps[2];
+         }
+      }
+      *p = tmp.ud;
+   }
 }
 /*------------------------------------------------------------------------------------
  Запись байта в область align(4) (flash, registers)
 --------------------------------------------------------------------------------------*/
-void FLASH_EEP_ATTR write_align4_chr(unsigned char *pd, unsigned char c)
+void write_align4_chr(unsigned char *pd, unsigned char c)
 {
-	union {
-		unsigned char uc[4];
-		unsigned int ud;
-	}tmp;
-	unsigned int *p = (unsigned int *)((unsigned int)pd & (~3));
-	unsigned int xlen = (unsigned int)pd & 3;
-	tmp.ud = *p;
-	tmp.uc[xlen] = c;
-	*p = tmp.ud;
+   union
+   {
+      unsigned char uc[4];
+      unsigned int ud;
+   } tmp;
+   unsigned int *p = (unsigned int *)((unsigned int)pd & (~3));
+   unsigned int xlen = (unsigned int)pd & 3;
+
+   tmp.ud = *p;
+   tmp.uc[xlen] = c;
+   *p = tmp.ud;
 }
 /*------------------------------------------------------------------------------------
  Чтение байта из области align(4) (flash, registers)
 --------------------------------------------------------------------------------------*/
-unsigned char FLASH_EEP_ATTR get_align4_chr(const unsigned char *ps)
+unsigned char get_align4_chr(const unsigned char *ps)
 {
-	return (*((unsigned int *)((unsigned int)ps & (~3))))>>(((unsigned int)ps & 3) << 3);
+   return (*((unsigned int *)((unsigned int)ps & (~3))))>>(((unsigned int)ps & 3) << 3);
 }
 /*------------------------------------------------------------------------------------
  Сравнение данных в области align(4) (flash, registers, ...) с областью align(1) (ram)
 --------------------------------------------------------------------------------------*/
-int FLASH_EEP_ATTR cmp_align1_align4(unsigned char * pd, void * ps, unsigned int len)
+int cmp_align1_align4(unsigned char * pd, void * ps, unsigned int len)
 {
-	union {
-		unsigned char uc[4];
-		unsigned int ud;
-	}tmp;
-	unsigned int *p = (unsigned int *)((unsigned int)ps & (~3));
-	unsigned int xlen = (unsigned int)ps & 3;
-	if(xlen) {
-		tmp.ud = *p++;
-		while (len)  {
-			len--;
-			if(*pd++ != tmp.uc[xlen++]) return 1;
-			if(xlen & 4) break;
-		}
-	}
-	xlen = len >> 2;
-	while(xlen) {
-		tmp.uc[0] = *pd++;
-		tmp.uc[1] = *pd++;
-		tmp.uc[2] = *pd++;
-		tmp.uc[3] = *pd++;
-		if(*p++ != tmp.ud) return 1;
-		xlen--;
-	}
-	if(len & 3) {
-		tmp.ud = *p;
-		if(pd[0] != tmp.uc[0]) return 1;
-		if(len & 2) {
-			if(pd[1] != tmp.uc[1]) return 1;
-			if(len & 1) {
-				if(pd[2] != tmp.uc[2]) return 1;
-			}
-		}
-	}
-	return 0;
+   union
+   {
+      unsigned char uc[4];
+      unsigned int ud;
+   } tmp;
+   unsigned int *p = (unsigned int *)((unsigned int)ps & (~3));
+   unsigned int xlen = (unsigned int)ps & 3;
+   
+   if(xlen)
+   {
+      tmp.ud = *p++;
+      while (len)
+      {
+         len--;
+         if(*pd++ != tmp.uc[xlen++]) return 1;
+         if(xlen & 4) break;
+      }
+   }
+   xlen = len >> 2;
+   while(xlen)
+   {
+      tmp.uc[0] = *pd++;
+      tmp.uc[1] = *pd++;
+      tmp.uc[2] = *pd++;
+      tmp.uc[3] = *pd++;
+      if(*p++ != tmp.ud) return 1;
+      xlen--;
+   }
+   if(len & 3)
+   {
+      tmp.ud = *p;
+      if(pd[0] != tmp.uc[0]) return 1;
+      if(len & 2)
+      {
+         if(pd[1] != tmp.uc[1]) return 1;
+         if(len & 1)
+         {
+            if(pd[2] != tmp.uc[2]) return 1;
+         }
+      }
+   }
+   return 0;
 }
 
 //-----------------------------------------------------------------------------
-LOCAL void _fwrite_word(unsigned int addr, unsigned int dw)
+static void _fwrite_word(unsigned int addr, unsigned int dw)
 {
-	//Write word
-	HAL_WRITE32(SPI_FLASH_BASE, addr, dw);
-
-	// Wait spic busy done
-	SpicWaitBusyDoneRtl8195A();
-
-	// Wait flash busy done (wip=0)
-    if(flashobj.SpicInitPara.flashtype == FLASH_MICRON)
-        SpicWaitOperationDoneRtl8195A(flashobj.SpicInitPara);
-    else
-        SpicWaitWipDoneRefinedRtl8195A(flashobj.SpicInitPara);
+   HAL_WRITE32(SPI_FLASH_BASE, addr, dw);
+   // Wait spic busy done
+   SpicWaitBusyDoneRtl8195A();
+   // Wait flash busy done (wip=0)
+   if(flashobj.SpicInitPara.flashtype == FLASH_MICRON)
+      SpicWaitOperationDoneRtl8195A(flashobj.SpicInitPara);
+   else
+      SpicWaitWipDoneRefinedRtl8195A(flashobj.SpicInitPara);
 }
 //-----------------------------------------------------------------------------
 // FunctionName : get_addr_bscfg
 // Опции:
-//  false - поиск текушего сегмента
-//  true - поиск нового сегмента для записи (pack)
+//  FALSE - поиск текушего сегмента
+//  TRUE - поиск нового сегмента для записи (pack)
 // Returns     : новый адрес сегмента для записи
 // ret < FMEM_ERROR_MAX - ошибка
 //-----------------------------------------------------------------------------
-LOCAL FLASH_EEP_ATTR unsigned int get_addr_bscfg(bool flg)
+static unsigned int get_addr_bscfg(bool flg)
 {
 	unsigned int x1 = (flg)? 0 : 0xFFFFFFFF, x2;
 	unsigned int faddr = FMEMORY_SCFG_BASE_ADDR;
@@ -246,13 +261,13 @@ LOCAL FLASH_EEP_ATTR unsigned int get_addr_bscfg(bool flg)
 //-----------------------------------------------------------------------------
 // FunctionName : get_addr_fobj
 // Опции:
-//  false - Поиск последней записи объекта по id и size
-//  true - Поиск присуствия записи объекта по id и size
+//  FALSE - Поиск последней записи объекта по id и size
+//  TRUE - Поиск присуствия записи объекта по id и size
 // Returns : адрес записи данных объекта
 // 0 - не найден
 // ret < FMEM_ERROR_MAX - ошибка
 //-----------------------------------------------------------------------------
-LOCAL FLASH_EEP_ATTR unsigned int get_addr_fobj(unsigned int base, fobj_head *obj, bool flg)
+static unsigned int get_addr_fobj(unsigned int base, fobj_head *obj, bool flg)
 {
 //	if(base == 0) return 0;
 	fobj_head fobj;
@@ -284,7 +299,7 @@ LOCAL FLASH_EEP_ATTR unsigned int get_addr_fobj(unsigned int base, fobj_head *ob
 // ret < FMEM_ERROR_MAX - ошибка
 // ret = 0 - не влезет, на pack
 //-----------------------------------------------------------------------------
-LOCAL FLASH_EEP_ATTR unsigned int get_addr_fobj_save(unsigned int base, fobj_head obj)
+static unsigned int get_addr_fobj_save(unsigned int base, fobj_head obj)
 {
 	fobj_head fobj;
 	unsigned int faddr = base + 4;
@@ -309,12 +324,12 @@ LOCAL FLASH_EEP_ATTR unsigned int get_addr_fobj_save(unsigned int base, fobj_hea
 // FunctionName : pack_cfg_fmem
 // Returns      : адрес для записи объекта
 //-----------------------------------------------------------------------------
-LOCAL FLASH_EEP_ATTR unsigned int pack_cfg_fmem(fobj_head obj)
+static unsigned int pack_cfg_fmem(fobj_head obj)
 {
 	fobj_head fobj;
-	unsigned int fnewseg = get_addr_bscfg(true); // поиск нового сегмента для записи (pack)
+	unsigned int fnewseg = get_addr_bscfg(TRUE); // поиск нового сегмента для записи (pack)
 	if(fnewseg < FMEM_ERROR_MAX) return fnewseg; // error
-	unsigned int foldseg = get_addr_bscfg(false); // поиск текушего сегмента
+	unsigned int foldseg = get_addr_bscfg(FALSE); // поиск текушего сегмента
 	if(foldseg < FMEM_ERROR_MAX) return fnewseg; // error
 	unsigned int faddr = foldseg;
 	unsigned int rdaddr, wraddr;
@@ -338,8 +353,8 @@ LOCAL FLASH_EEP_ATTR unsigned int pack_cfg_fmem(fobj_head obj)
 		if(fobj.n.size > MAX_FOBJ_SIZE) len = align(MAX_FOBJ_SIZE + fobj_head_size);
 		else len = align(fobj.n.size + fobj_head_size);
 		if(fobj.n.id != obj.n.id &&  fobj.n.size <= MAX_FOBJ_SIZE) { // объект валидный
-			if(get_addr_fobj(fnewseg, &fobj, true) == 0) { // найдем, сохранили ли мы его уже? нет
-				rdaddr = get_addr_fobj(foldseg, &fobj, false); // найдем последнее сохранение объекта в старом сенгменте, size изменен
+			if(get_addr_fobj(fnewseg, &fobj, TRUE) == 0) { // найдем, сохранили ли мы его уже? нет
+				rdaddr = get_addr_fobj(foldseg, &fobj, FALSE); // найдем последнее сохранение объекта в старом сенгменте, size изменен
 				if(rdaddr < FMEM_ERROR_MAX) return rdaddr; // ???
 				if(wraddr + len >= fnewseg + FMEMORY_SCFG_BANK_SIZE) {
 #if DEBUGSOO > 1
@@ -371,16 +386,16 @@ LOCAL FLASH_EEP_ATTR unsigned int pack_cfg_fmem(fobj_head obj)
 	return get_addr_fobj_save(fnewseg, obj); // адрес для записи объекта;
 }
 //-----------------------------------------------------------------------------
-LOCAL signed short FLASH_EEP_ATTR _flash_write_cfg(void *ptr, unsigned short id, unsigned short size)
+static signed short _flash_write_cfg(void *ptr, unsigned short id, unsigned short size)
 {
 	fobj_head fobj;
 	fobj.n.id = id;
 	fobj.n.size = size;
-//	bool retb = false;
-	unsigned int faddr = get_addr_bscfg(false);
+//	bool retb = FALSE;
+	unsigned int faddr = get_addr_bscfg(FALSE);
 
 	if(faddr >= FMEM_ERROR_MAX)  {
-		unsigned int xfaddr = get_addr_fobj(faddr, &fobj, false);
+		unsigned int xfaddr = get_addr_fobj(faddr, &fobj, FALSE);
 		if(xfaddr > FMEM_ERROR_MAX && size == fobj.n.size) {
 			if(size == 0
 					|| cmp_align1_align4(ptr, (void *)SPI_FLASH_BASE + xfaddr + fobj_head_size, size) == 0) {
@@ -429,7 +444,7 @@ LOCAL signed short FLASH_EEP_ATTR _flash_write_cfg(void *ptr, unsigned short id,
 	if(len) SpicUserProgramRtl8195A((u8 *)ptr, 1, faddr, len);
 #else
 	u32 len = (size + 3) >> 2;
-	uint8 * ps = ptr;
+	uint8_t * ps = ptr;
   	while(len--) {
 		tmp.uc[0] = *ps++;
 		tmp.uc[1] = *ps++;
@@ -443,12 +458,12 @@ LOCAL signed short FLASH_EEP_ATTR _flash_write_cfg(void *ptr, unsigned short id,
 }
 //=============================================================================
 //- Сохранить объект в flash --------------------------------------------------
-//  Returns	: false/true
+//  Returns	: FALSE/TRUE
 //-----------------------------------------------------------------------------
-bool FLASH_EEP_ATTR flash_write_cfg(void *ptr, unsigned short id, unsigned short size)
+bool flash_write_cfg(void *ptr, unsigned short id, unsigned short size)
 {
-	if(size > MAX_FOBJ_SIZE) return false;
-	bool retb = false;
+	if(size > MAX_FOBJ_SIZE) return FALSE;
+	bool retb = FALSE;
 	device_mutex_lock(RT_DEV_LOCK_FLASH);
 	// SPIC Init
     flash_turnon();
@@ -457,7 +472,7 @@ bool FLASH_EEP_ATTR flash_write_cfg(void *ptr, unsigned short id, unsigned short
 #if DEBUGSOO > 3
 		DBG_FEEP_INFO("saved ok\n");
 #endif
-		retb = true;
+		retb = TRUE;
 	}
     SpicDisableRtl8195A();
     device_mutex_unlock(RT_DEV_LOCK_FLASH);
@@ -475,7 +490,7 @@ bool FLASH_EEP_ATTR flash_write_cfg(void *ptr, unsigned short id, unsigned short
 //  -1 - не найден
 //   0..MAX_FOBJ_SIZE - ok, сохраненный размер объекта
 //-----------------------------------------------------------------------------
-signed short FLASH_EEP_ATTR flash_read_cfg(void *ptr, unsigned short id, unsigned short maxsize)
+signed short flash_read_cfg(void *ptr, unsigned short id, unsigned short maxsize)
 {
     signed short rets = FMEM_ERROR;
 	if (maxsize <= MAX_FOBJ_SIZE) {
@@ -489,9 +504,9 @@ signed short FLASH_EEP_ATTR flash_read_cfg(void *ptr, unsigned short id, unsigne
 		// SPIC Init
 	    flash_turnon();
 	    if(fspic_isinit == 0) flash_init(&flashobj);
-		unsigned int faddr = get_addr_bscfg(false);
+		unsigned int faddr = get_addr_bscfg(FALSE);
 		if(faddr >= FMEM_ERROR_MAX) {
-			faddr = get_addr_fobj(faddr, &fobj, false);
+			faddr = get_addr_fobj(faddr, &fobj, FALSE);
 			if(faddr >= FMEM_ERROR_MAX) {
 #if 0
 				if(maxsize != 0 && ptr != NULL)

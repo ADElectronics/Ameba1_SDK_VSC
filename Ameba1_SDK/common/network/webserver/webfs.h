@@ -8,8 +8,6 @@
 #ifndef _WEBFS_H_
 #define _WEBFS_H_
 
-//#include "flash_eep.h"
-
 #ifndef WEBFS_DISK_FADDR
 #define WEBFS_DISK_FADDR         0x0D0000
 #endif

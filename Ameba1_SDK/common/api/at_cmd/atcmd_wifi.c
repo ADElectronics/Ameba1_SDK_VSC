@@ -1602,9 +1602,9 @@ void fATPE(void *arg)
     char *argv[MAX_ARGC] = {0};
     unsigned int ip_addr = 0;
     //unsigned char sta_ip[4] = {192,168,3,80}, sta_netmask[4] = {255,255,255,0}, sta_gw[4] = {192,168,3,1};
-	struct ip_addr ipaddr;
-	struct ip_addr netmask;
-	struct ip_addr gw;
+   ip_addr_t ipaddr;
+   ip_addr_t netmask;
+   ip_addr_t gw;
 
     if(!arg){
         AT_DBG_MSG(AT_FLAG_WIFI, AT_DBG_ERROR,

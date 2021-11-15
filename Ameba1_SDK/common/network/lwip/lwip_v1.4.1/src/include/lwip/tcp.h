@@ -371,6 +371,10 @@ err_t            tcp_output  (struct tcp_pcb *pcb);
 
 const char* tcp_debug_state_str(enum tcp_state s);
 
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+void tcp_randomize_local_port(void);
+#endif
 
 #ifdef __cplusplus
 }

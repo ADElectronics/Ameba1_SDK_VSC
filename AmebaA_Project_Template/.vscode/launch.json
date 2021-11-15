@@ -5,7 +5,7 @@
 			"name": "Debug in RAM",
 			"cwd": "${workspaceRoot}",
 			"executable": "./build/bin/build.axf",
-			"svdFile": "JLink/SVD/rtl8195a.svd", //RTL8195AM
+			"svdFile": "JLink/SVD/RTL8195AM.svd", //RTL8195AM
 			"request": "attach", // attach or launch
 			"type": "cortex-debug",
 			"servertype": "jlink",

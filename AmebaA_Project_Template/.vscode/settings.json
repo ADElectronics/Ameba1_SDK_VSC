@@ -2,6 +2,9 @@
 	"cortex-debug.enableTelemetry": false,
 	"cortex-debug.JLinkGDBServerPath": "JLinkGDBServerCL.exe",
 	"files.associations": {
-		"cstdio": "c"
-	}
+      "cstdio": "c",
+      "spi_api.h": "c",
+      "gpio_api.h": "c",
+      "pinmap.h": "c"
+   }
 }

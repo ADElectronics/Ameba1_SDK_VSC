@@ -3,7 +3,7 @@
  * Description: The web server configration.
  * Small WEB server ESP8266EX
  *
- * Author: PV` 12/2014
+ * Author: pvvx 12/2014
  */
 
 #ifndef _INCLUDE_WEB_SRV_INT_H_
@@ -11,24 +11,25 @@
 
 #include "web_srv.h"
 
-#define WEB_NAME_VERSION "PVs/0.2"
+#define WEB_NAME_VERSION "PVVXServer"
 
 // lifetime (sec) of static responses as string 60*60*24*14=1209600"
-#define FILE_CACHE_MAX_AGE_SEC  3600 // время для кеша файлов, ставить 0 пока тест!
+#define FILE_CACHE_MAX_AGE_SEC      3600 // время для кеша файлов, ставить 0 пока тест!
 
-#define MAX_HTTP_HEAD_BUF TCP_SRV_SERVER_MAX_RXBUF // максимальный размер HTTP запроса (GET)
+#define MAX_HTTP_HEAD_BUF           TCP_SRV_SERVER_MAX_RXBUF // максимальный размер HTTP запроса (GET)
 
-#define RESCHKS_SEND_SIZE 16
-#define RESCHKE_SEND_SIZE 8
-#define RESCHK_SEND_SIZE (RESCHKS_SEND_SIZE + RESCHKE_SEND_SIZE)
+#define RESCHKS_SEND_SIZE           16
+#define RESCHKE_SEND_SIZE           8
+#define RESCHK_SEND_SIZE            (RESCHKS_SEND_SIZE + RESCHKE_SEND_SIZE)
 
-#define MIN_SEND_SIZE (256 + RESCHK_SEND_SIZE) // минимальный размер буфера для передачи файла
-#define MAX_SEND_SIZE ((TCP_SND_BUF) + RESCHK_SEND_SIZE) // ((TCP_MSS*4) + RESCHK_SEND_SIZE) // максимальный размер буфера для передачи 4*MSS = 5840 (MSS=1460)
+#define MIN_SEND_SIZE               (256 + RESCHK_SEND_SIZE) // минимальный размер буфера для передачи файла
+#define MAX_SEND_SIZE               ((TCP_SND_BUF) + RESCHK_SEND_SIZE) // ((TCP_MSS*4) + RESCHK_SEND_SIZE) // максимальный размер буфера для передачи 4*MSS = 5840 (MSS=1460)
 
-#define HTTP_SEND_SIZE 384 // минимальный размер буфера для передачи заголовка HTTP
-#define SCB_SEND_SIZE  128 // минимальный резерв в буфере для callback
+#define HTTP_SEND_SIZE              384 // минимальный размер буфера для передачи заголовка HTTP
+#define SCB_SEND_SIZE               128 // минимальный резерв в буфере для callback
 
-#define  webfile bffiles[0]        // File pointer for main file
+// File pointer for main file
+#define webfile                     bffiles[0]
 
 //-----------------------------------------------------------------------------
 

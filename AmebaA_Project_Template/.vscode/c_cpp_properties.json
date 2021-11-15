@@ -1,0 +1,61 @@
+{
+   "env": {
+      "AMEBA1_SDK_PATH": "../Ameba1_SDK/",
+      "LWIP_VERSION": "2.1.2",
+      "FREERTOS_VERSION": "9.0.0",
+      "ARM_GCC_TOOLCHAIN": "C:/Data/GCC/ARM/xpack-arm-none-eabi-gcc-10.2.1-1.1/"
+   },
+   "configurations": [
+      {
+         "name": "arm_c_cpp_properties",
+         "compilerPath": "${env.ARM_GCC_TOOLCHAIN}/bin/arm-none-eabi-gcc.exe",
+         "includePath": [
+            "${env.ARM_GCC_TOOLCHAIN}arm-none-eabi/include/**",
+            "${env.ARM_GCC_TOOLCHAIN}arm-none-eabi/include/sys/**",
+            "${env.ARM_GCC_TOOLCHAIN}lib/**",
+            
+            "${env.AMEBA1_SDK_PATH}common/api/**",
+            "${env.AMEBA1_SDK_PATH}common/drivers/**",
+            "${env.AMEBA1_SDK_PATH}common/test/**",
+            "${env.AMEBA1_SDK_PATH}common/example/**",
+            "${env.AMEBA1_SDK_PATH}common/mbed/api/*",
+            "${env.AMEBA1_SDK_PATH}common/mbed/hal/*",
+            "${env.AMEBA1_SDK_PATH}common/mbed/hal_ext/*",
+            "${env.AMEBA1_SDK_PATH}common/mbed/targets/hal/rtl8195a/*",
+            "${env.AMEBA1_SDK_PATH}common/network/lwip/lwip_v${env.LWIP_VERSION}/**",
+            "${env.AMEBA1_SDK_PATH}common/network/*",
+            "${env.AMEBA1_SDK_PATH}common/network/httpc/*",
+            "${env.AMEBA1_SDK_PATH}common/network/httpd/*",
+            "${env.AMEBA1_SDK_PATH}common/network/mDNS/*",
+            "${env.AMEBA1_SDK_PATH}common/network/sntp/*",
+            "${env.AMEBA1_SDK_PATH}common/network/webserver/*",
+            "${env.AMEBA1_SDK_PATH}common/network/websocket/*",
+            "${env.AMEBA1_SDK_PATH}common/utilities/**",
+            "${env.AMEBA1_SDK_PATH}os/freertos/*",
+            "${env.AMEBA1_SDK_PATH}os/freertos/freertos_v${env.FREERTOS_VERSION}/**",
+            "${env.AMEBA1_SDK_PATH}os/os_dep/**",
+            "${env.AMEBA1_SDK_PATH}soc/realtek/common/**",
+            "${env.AMEBA1_SDK_PATH}soc/realtek/8195a/**",
+            "${workspaceRoot}/Inc",
+            "${workspaceRoot}/Src"
+         ],
+         "defines": [
+            "CONFIG_PLATFORM_8195A",
+            "F_CPU=166666666L",
+            "ARM_MATH_CM3",
+            "M3",
+            "GCC_ARMCM3",
+            "LWIP_TIMEVAL_PRIVATE=0",
+            "LWIP_NO_STDINT_H=1",
+            "LWIP_NO_CTYPE_H=1",
+            "IN_ADDR_T_DEFINED=1",
+            "LWIP_IPV4=1",
+            "USE_AMEBA_STARTUP=0"
+         ],
+         "cStandard": "c11",
+         "cppStandard": "c++17",
+         "intelliSenseMode": "windows-gcc-arm"
+      }
+   ],
+   "version": 4
+}

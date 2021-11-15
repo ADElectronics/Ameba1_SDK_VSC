@@ -491,6 +491,11 @@ void tcp_ext_arg_set(struct tcp_pcb *pcb, uint8_t id, void *arg);
 void *tcp_ext_arg_get(const struct tcp_pcb *pcb, uint8_t id);
 #endif
 
+// Realtek add
+#if LWIP_RANDOMIZE_INITIAL_LOCAL_PORTS
+void tcp_randomize_local_port(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

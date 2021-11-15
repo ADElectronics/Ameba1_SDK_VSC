@@ -7,21 +7,16 @@
 #ifndef _RTL_LIB_H_
 #define	_RTL_LIB_H_
 
-
 #include <basic_types.h>
 #include <diag.h>
 #include <va_list.h>
 
 extern int __rtl_errno;
-
-
 void init_rom_libgloss_ram_map(void);
-
 
 //
 // RTL library functions for Libc::stdio
-// 
-
+//
 extern int rtl_printf(IN const char* fmt, ...);
 extern int rtl_vprintf(const char *fmt, va_list ap);
 extern int rtl_sprintf(char* str, const char* fmt, ...);
@@ -30,8 +25,7 @@ extern int rtl_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
 
 //
 // RTL library functions for string
-// 
-
+//
 extern void * rtl_memchr(const void * src_void , int c , size_t length);
 extern int rtl_memcmp(const void * m1 , const void * m2 , size_t n);
 extern void * rtl_memcpy(void * dst0 , const void * src0 , size_t len0);
@@ -51,9 +45,7 @@ extern char * rtl_strtok(char * s , const char * delim);
 
 //
 // RTL library functions for math
-// 
-
-
+//
 extern double rtl_fabs(double);
 extern float rtl_fabsf(float a);
 extern float rtl_cos_f32(float a);
@@ -67,17 +59,12 @@ extern float rtl_fdiv(float a, float b);
 extern int rtl_fcmplt(float a, float b);
 extern int rtl_fcmpgt(float a, float b);
 
-
-
-
-
 //
 // RTL eabi functions 
+//
 
 extern double rtl_ftod(float f);
-
 extern double rtl_ddiv(double a, double b);
-
 
 //
 // Macro Library Functions
@@ -86,7 +73,7 @@ extern double rtl_ddiv(double a, double b);
 typedef union
 {
   float value;
-  u32 	word;
+  u32 word;
 } ieee_float_shape_type;
 
 /* Get a 32 bit int from a float.  */
@@ -110,34 +97,28 @@ do {								\
 static inline
 float rtl_nanf(void)
 {
-	float x;
-
-	SET_FLOAT_WORD(x,0x7fc00000);
-	return x;
+   float x;
+   SET_FLOAT_WORD(x, 0x7fc00000);
+   return x;
 }
-
 
 //
 // Library Test functions
 //
-
 extern int rtl_lib_test(IN u16 argc, IN u8 *argv[]);
 extern int rtl_math_test(IN u16 argc, IN u8 *argv[]);
 extern int rtl_string_test(IN u16 argc, IN u8 *argv[]);
 
-
 //
 // Macro functions
 //
-
 #undef dbg_printf
 #define dbg_printf(fmt, args...) \
-	     	rtl_printf("%s():%d : " fmt "\n", __FUNCTION__, __LINE__, ##args); 
+         rtl_printf("%s():%d : " fmt "\n", __FUNCTION__, __LINE__, ##args); 
 
 
 #undef err_printf
 #define err_printf(fmt, args...) \
-	     	rtl_printf("%s():%d : " fmt "\n", __FUNCTION__, __LINE__, ##args); 
-
+         rtl_printf("%s():%d : " fmt "\n", __FUNCTION__, __LINE__, ##args); 
 
 #endif /* _RTL_LIB_H_ */

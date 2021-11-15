@@ -7,40 +7,16 @@
 #include "hal_gpio.h"
 #include "rtl8195a_gpio.h"
 
-#define BITBAND_SRAM_REF  0x10000000
-#define BITBAND_SRAM_BASE 0x12000000
-#define BITBAND_SRAM(a,b) (BITBAND_SRAM_BASE + (a-BITBAND_SRAM_REF)*32 + (b*4)) // Convert SRAM address
+#define BITBAND_SRAM_REF      0x10000000
+#define BITBAND_SRAM_BASE     0x12000000
+#define BITBAND_SRAM(a,b)     (BITBAND_SRAM_BASE + (a-BITBAND_SRAM_REF)*32 + (b*4)) // Convert SRAM address
 
-/*
- * in hal_platform.h
-#define GPIO_REG_BASE		0x40001000
- */
+#define BITBAND_PERI_REF      0x40000000
+#define BITBAND_PERI_BASE     0x42000000
+#define BITBAND_PERI(a,b)     (BITBAND_PERI_BASE + (a-BITBAND_PERI_REF)*32 + (b*4)) // Convert PERI address
 
-/*
- * in rtl8195a_gpio.h
- *
-#define REG_PORTA_DR           0x00        // data register
-#define REG_PORTA_DDR          0x04        // data direction
-#define REG_PORTA_CTRL         0x08        // data source control, we should keep it as default: data source from software
-
-#define REG_PORTB_DR           0x0c        // data register
-#define REG_PORTB_DDR          0x10        // data direction
-#define REG_PORTB_CTRL         0x14        // data source control, we should keep it as default: data source from software
-
-#define REG_PORTC_DR           0x18        // data register
-#define REG_PORTC_DDR          0x1c        // data direction
-#define REG_PORTC_CTRL         0x20        // data source control, we should keep it as default: data source from software
-
-#define REG_EXT_PORTA          0x50        // GPIO IN read or OUT read back
-#define REG_EXT_PORTB          0x54        // GPIO IN read or OUT read back
-#define REG_EXT_PORTC          0x58        // GPIO IN read or OUT read back
-*/
-
-#define BITBAND_PERI_REF	0x40000000
-#define BITBAND_PERI_BASE	0x42000000
-#define BITBAND_PERI(a,b)	(BITBAND_PERI_BASE + (a-BITBAND_PERI_REF)*32 + (b*4))	// Convert PERI address
-#define ucBITBAND_PERI(a,b)	*((volatile unsigned char *)BITBAND_PERI(a,b))
-#define uiBITBAND_PERI(a,b) *((volatile unsigned int *)BITBAND_PERI(a,b))
+#define ucBITBAND_PERI(a,b)   *((volatile unsigned char *)BITBAND_PERI(a,b))
+#define uiBITBAND_PERI(a,b)   *((volatile unsigned int *)BITBAND_PERI(a,b))
 
 #define BITBAND_A0 ucBITBAND_PERI(GPIO_REG_BASE+GPIO_PORTA_DR,0)	//Port = 0, bit = 0, A0
 #define BITBAND_A1 ucBITBAND_PERI(GPIO_REG_BASE+GPIO_PORTA_DR,1)	//Port = 0, bit = 1, A1
@@ -144,10 +120,11 @@
 #define BITBAND_K5 ucBITBAND_PERI(GPIO_REG_BASE+GPIO_PORTC_DR,25)  //Port = 2, bit = 25, K5
 #define BITBAND_K6 ucBITBAND_PERI(GPIO_REG_BASE+GPIO_PORTC_DR,26)  //Port = 2, bit = 26, K6
 
+#define GetDirPinBitBandAddr(pin)   (GetOutPinBitBandAddr(pin) + 4*32)
+
 volatile uint8_t * BitBandAddr(void *addr, uint8_t bit);
 volatile uint8_t * BitBandPeriAddr(void *addr, uint8_t bit);
 volatile uint8_t * GetOutPinBitBandAddr(PinName pin);
-#define GetDirPinBitBandAddr(pin) (GetOutPinBitBandAddr(pin) + 4*32)
 volatile uint8_t * GetInPinBitBandAddr(PinName pin);
 volatile uint8_t * HardSetPin(PinName pin, HAL_GPIO_PIN_MODE pmode, uint8_t val); /* return pointer bit out register */
 

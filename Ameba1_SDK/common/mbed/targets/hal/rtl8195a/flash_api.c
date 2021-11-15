@@ -30,7 +30,7 @@ extern VOID SpicWaitBusyDoneRtl8195A(VOID);
 
 static int isinit = 0;
 static flash_t flashobj;
-    
+
 static void flash_init(flash_t * obj);
 static void flash_turnon();
 /**
